@@ -12,13 +12,13 @@
       "win": {
         "target": "nsis"
       },
-      "nsis": {
-        "oneClick": true,
-        "perMachine": false,
-        "allowToChangeInstallationDirectory": false,
-        "createDesktopShortcut": true,
-        "shortcutName": "Scheda D&D"
-      }
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Scheda D&D"
+    }
   },
   "devDependencies": {
     "electron": "^30.0.0",
