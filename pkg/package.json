@@ -7,17 +7,23 @@
     "build": "electron-builder --win"
   },
   "build": {
-      "appId": "com.version.schedadnd",
-      "productName": "Scheda DeD",
-      "win": {
-        "target": "nsis"
-      },
+    "appId": "com.version.schedadnd",
+    "productName": "Scheda DnD",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "requestedExecutionLevel": "asInvoker"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "Scheda D&D"
+      "shortcutName": "Scheda D&D",
+      "uninstallDisplayName": "Scheda DnD - Disinstalla",
+      "runAfterFinish": true
     }
   },
   "devDependencies": {
