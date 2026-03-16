@@ -43,11 +43,11 @@ jobs:
         shell: bash
         run: |
           tag="${GITHUB_REF_NAME}"
-          shopt -s nullglob globstar
-          files=(release/*Setup*.exe release/*.dmg release/*.AppImage release/**/*Setup*.exe release/**/*.dmg release/**/*.AppImage)
-          files=($(printf "%s\n" "${files[@]}" | grep -vE 'builder-debug\.yml|latest-.*\.yml'))
-          if [ ${#files[@]} -eq 0 ]; then
+          files=$(find release -type f \( -name "*Setup*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) ! -name "builder-debug.yml" ! -name "latest-*.yml")
+          if [ -z "$files" ]; then
             echo "No assets found."
             exit 1
           fi
-          gh release upload "$tag" "${files[@]}" --clobber
+          while IFS= read -r file; do
+            gh release upload "$tag" "$file" --clobber
+          done <<< "$files"
