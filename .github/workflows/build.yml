@@ -2,8 +2,6 @@ name: Build
 
 env:
   NODE_VERSION: 24
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 on:
   push:
@@ -13,6 +11,8 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       matrix:
@@ -40,28 +40,19 @@ jobs:
       - name: npm Electron
         run: npx electron-builder --publish=never
 
-      - name: Remove existing release assets
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const tag = process.env.GITHUB_REF_NAME
-            const { owner, repo } = context.repo
-            const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag })
-            const assets = release.data.assets || []
-            for (const asset of assets) {
-              await github.rest.repos.deleteReleaseAsset({
-                owner,
-                repo,
-                asset_id: asset.id,
-              })
-            }
+      - name: Clean release assets
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          assets=$(gh release view "$tag" --json assets -q '.assets[].name' || true)
+          if [ -n "$assets" ]; then
+            while read -r name; do
+              [ -n "$name" ] && gh release delete-asset "$tag" "$name" -y
+            done <<< "$assets"
+          fi
 
       - name: Upload assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          overwrite_files: true
-          files: |
-            sheet/release/**/*Setup*.exe
-            sheet/release/**/*.dmg
-            sheet/release/**/*.AppImage
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release upload "$tag" sheet/release/**/*Setup*.exe sheet/release/**/*.dmg sheet/release/**/*.AppImage --clobber
