@@ -51,6 +51,12 @@ jobs:
         with:
           node-version: ${{env.NODE_VERSION}}
 
+      - name: Install Linux deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
       - name: Installa le dipendenze
         run: npm install --legacy-peer-deps
 
@@ -67,7 +73,6 @@ jobs:
           shopt -s nullglob
           files=(release/**/*Setup*.exe)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "Windows setup not found."
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
@@ -79,7 +84,6 @@ jobs:
           shopt -s nullglob
           files=(release/**/*.dmg)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "DMG not found."
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
@@ -91,7 +95,6 @@ jobs:
           shopt -s nullglob
           files=(release/**/*.AppImage)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "AppImage not found."
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
