@@ -73,6 +73,8 @@ jobs:
           shopt -s nullglob
           files=(release/**/*Setup*.exe)
           if [ ${#files[@]} -eq 0 ]; then
+            echo "Windows setup not found in release/."
+            ls -la release || true
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
@@ -84,6 +86,8 @@ jobs:
           shopt -s nullglob
           files=(release/**/*.dmg)
           if [ ${#files[@]} -eq 0 ]; then
+            echo "DMG not found in release/."
+            ls -la release || true
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
@@ -95,6 +99,8 @@ jobs:
           shopt -s nullglob
           files=(release/**/*.AppImage)
           if [ ${#files[@]} -eq 0 ]; then
+            echo "AppImage not found in release/."
+            ls -la release || true
             exit 1
           fi
           gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
