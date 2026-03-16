@@ -21,9 +21,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete ${{ github.ref_name }} --repo ${{ github.repository }} --yes || true
-          gh release create ${{ github.ref_name }} --repo ${{ github.repository }} --title "Versione ${{ github.ref_name }}" --notes "Scaricare il file d'installazione corretto per il proprio sistema operativo."
-
-  # 2. COMPILA E CARICA SOLO I 3 FILE CHE VOGLIAMO
+          gh release create ${{ github.ref_name }} --repo ${{ github.repository }} --title "Versione ${{ github.ref_name }}"
   release:
     needs: prepare
     runs-on: ${{ matrix.os }}
@@ -42,7 +40,9 @@ jobs:
       - run: npm install --legacy-peer-deps
       
       - name: Compila App (Senza auto-publish)
-        run: npx electron-builder 
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish never
       
       - name: Filtra e carica solo gli installer
         env:
