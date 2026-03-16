@@ -11,6 +11,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NODE_VERSION: 24
 
 jobs:
   prepare:
@@ -34,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{env.NODE_VERSION}}
       
       - run: npm install --legacy-peer-deps
       
