@@ -1,4 +1,4 @@
-name: Build
+name: Build and Release
 
 on:
   push:
@@ -10,13 +10,25 @@ permissions:
 
 env:
   NODE_VERSION: 24
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: ./sheet
     steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install --legacy-peer-deps
+      - run: npm run build
+      - run: npx electron-builder --publish never
       - name: Cleanup release assets
         shell: bash
         run: |
@@ -27,80 +39,15 @@ jobs:
               [ -n "$name" ] && gh release delete-asset "$tag" "$name" -y
             done <<< "$assets"
           fi
-
-  release:
-    runs-on: ${{ matrix.os }}
-    needs: cleanup
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    defaults:
-      run:
-        working-directory: ./sheet
-
-    steps:
-      - name: Checkout del codice
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{env.NODE_VERSION}}
-
-      - name: Install Linux deps
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfuse2
-
-      - name: Installa le dipendenze
-        run: npm install --legacy-peer-deps
-
-      - name: npm React
-        run: npm run build
-
-      - name: npm Electron
-        run: npx electron-builder --publish never
-
-      - name: Upload Windows Setup
-        if: matrix.os == 'windows-latest'
+      - name: Upload assets
         shell: bash
         run: |
+          tag="${GITHUB_REF_NAME}"
           shopt -s nullglob
-          files=(release/**/*Setup*.exe)
+          files=(release/**/*Setup*.exe release/**/*.dmg release/**/*.AppImage)
+          files=($(printf "%s\n" "${files[@]}" | grep -vE 'builder-debug\.yml|latest-.*\.yml'))
           if [ ${#files[@]} -eq 0 ]; then
-            echo "Windows setup not found in release/."
-            ls -la release || true
+            echo "No assets found."
             exit 1
           fi
-          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
-
-      - name: Upload macOS DMG
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          shopt -s nullglob
-          files=(release/**/*.dmg)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "DMG not found in release/."
-            ls -la release || true
-            exit 1
-          fi
-          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
-
-      - name: Upload Linux AppImage
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          shopt -s nullglob
-          files=(release/**/*.AppImage)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "AppImage not found in release/."
-            ls -la release || true
-            exit 1
-          fi
-          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
+          gh release upload "$tag" "${files[@]}" --clobber
