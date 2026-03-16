@@ -1,5 +1,9 @@
 name: Build
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 on:
   push:
     tags:
@@ -8,8 +12,6 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     strategy:
       matrix:
@@ -36,16 +38,13 @@ jobs:
 
       - name: npm Electron
         run: npx electron-builder --publish=never
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          overwrite_files: true
           files: |
             sheet/release/**/*.exe
             sheet/release/**/*.dmg
             sheet/release/**/*.AppImage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
