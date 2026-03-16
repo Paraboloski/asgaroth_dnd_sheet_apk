@@ -33,7 +33,9 @@ jobs:
         run: npm run build
 
       - name: npm Electron
-        run: npx electron-builder
+        run: npx electron-builder --publish=never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload assets
         uses: softprops/action-gh-release@v2
