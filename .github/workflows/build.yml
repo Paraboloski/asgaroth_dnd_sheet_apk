@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     strategy:
       matrix:
@@ -42,8 +44,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            sheet/dist/**/*.exe
-            sheet/dist/**/*.dmg
-            sheet/dist/**/*.AppImage
+            sheet/release/**/*.exe
+            sheet/release/**/*.dmg
+            sheet/release/**/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

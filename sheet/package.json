@@ -4,7 +4,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "main": "main.cjs",
+  "main": "src/main.cjs",
   "author": "Paraboloski",
   "repository": "https://github.com/Paraboloski/asgaroth_d-d_sheet_apk.git",
   "scripts": {
@@ -14,16 +14,16 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
-    "release": "bash ./commit.sh"
+    "commit": "bash ./git.sh"
   },
   "build": {
-    "appId": "com.tuonome.dndsheet",
+    "appId": "com.ver.dndsheet",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
-      "main.cjs"
+      "src/main.cjs"
     ],
     "win": {
       "target": "nsis"
@@ -45,13 +45,13 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",
     "concurrently": "^9.2.1",
     "electron": "^41.0.2",
-    "electron-builder": "^26.8.1",
+    "electron-builder": "^26.8.2",
     "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
