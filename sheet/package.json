@@ -6,22 +6,21 @@
   "type": "module",
   "main": "src/main.cjs",
   "author": "Paraboloski",
-  "repository": "https://github.com/Paraboloski/asgaroth_d-d_sheet_apk.git",
+  "repository": "https://github.com/Paraboloski/asgaroth_dnd_sheet_apk.git",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "commit": "bash ./git.sh"
+    "electron:build": "npm run build && electron-builder"
   },
   "build": {
     "productName": "Scheda D&D",
     "publish": [
       {
         "provider": "github",
-        "releaseType": "draft"
+        "releaseType": "release"
       }
     ],
     "win": {
