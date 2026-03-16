@@ -63,14 +63,35 @@ jobs:
       - name: Upload Windows Setup
         if: matrix.os == 'windows-latest'
         shell: bash
-        run: gh release upload "${GITHUB_REF_NAME}" release/**/*Setup*.exe --clobber
+        run: |
+          shopt -s nullglob
+          files=(release/**/*Setup*.exe)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Windows setup not found."
+            exit 1
+          fi
+          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
 
       - name: Upload macOS DMG
         if: matrix.os == 'macos-latest'
         shell: bash
-        run: gh release upload "${GITHUB_REF_NAME}" release/**/*.dmg --clobber
+        run: |
+          shopt -s nullglob
+          files=(release/**/*.dmg)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "DMG not found."
+            exit 1
+          fi
+          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
 
       - name: Upload Linux AppImage
         if: matrix.os == 'ubuntu-latest'
         shell: bash
-        run: gh release upload "${GITHUB_REF_NAME}" release/**/*.AppImage --clobber
+        run: |
+          shopt -s nullglob
+          files=(release/**/*.AppImage)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "AppImage not found."
+            exit 1
+          fi
+          gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
