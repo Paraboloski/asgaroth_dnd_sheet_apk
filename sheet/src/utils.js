@@ -1,30 +1,46 @@
-export const createInitialCharacterState = () => ({
-  header: {
-    name: "Nome Personaggio", class1: "Classe 1", class2: "Classe 2",
-    race: "Razza", background: "Background", alignment: "Allineamento",
-    level: "1", player: "Tuo Nome"
-  },
+import { DEFAULT_STATE } from './init.js'
 
-  stats: { str: "10", dex: "10", con: "10", int: "10", wis: "10", cha: "10" },
-  combat: {
-    ac: "10", speed: "9m", maxHitPoints: "10", currentHitPoints: "10", temporaryHitPoints: "0",
-    honor: "+0", sanity: "+0", occult: "+0", passive: "10",
-    profBonus: "+0", heroPoints: "0"
-  },
-  skills: {}, 
-  inventory: {
-    proficiencies: [{ id: Date.now() + 1, label: "Nome:", value: "..." }],
-    items: [{ id: Date.now() + 2, label: "Nome", value: "x?", description: "..." }],
-    equipment: [{ id: Date.now() + 3, label: "Nome:", value: "..." }]
-  },
-  actions: {
-    attacks: [{ id: Date.now() + 4, name: "Attacco 1", bonus: "+?", damage: "1d? + ?", notes: "..." }],
-    features: [{ id: Date.now() + 5, name: "Tratto 1", effect: "Descrizione 1." }],
-    traits: [{ id: Date.now() + 6, name: "Tratto 1", description: "Descrizione 1." }]
+const clone = (value) => JSON.parse(JSON.stringify(value))
+
+const getIpcRenderer = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const electron = window.require ? window.require('electron') : null
+    return electron?.ipcRenderer ?? null
+  } catch {
+    return null
   }
-})
+}
 
-export const INITIAL_CHARACTER_STATE = createInitialCharacterState()
+export const createInitialCharacterState = () => clone(DEFAULT_STATE)
+
+export const fetchCharacterState = async () => {
+  const ipcRenderer = getIpcRenderer()
+  if (!ipcRenderer?.invoke) return clone(DEFAULT_STATE)
+  try {
+    const state = await ipcRenderer.invoke('get-character-state')
+    return state ? clone(state) : clone(DEFAULT_STATE)
+  } catch {
+    return clone(DEFAULT_STATE)
+  }
+}
+
+export const saveCharacterState = async (state) => {
+  const ipcRenderer = getIpcRenderer()
+  if (!ipcRenderer?.invoke) return false
+  try {
+    return Boolean(await ipcRenderer.invoke('save-character-state', state))
+  } catch {
+    return false
+  }
+}
+
+export const notifyUnsavedChanges = (hasUnsavedChanges) => {
+  const ipcRenderer = getIpcRenderer()
+  if (ipcRenderer?.send) {
+    ipcRenderer.send('set-unsaved-changes', Boolean(hasUnsavedChanges))
+  }
+}
 
 export const formatSignedNumber = (value) => (value >= 0 ? `+${value}` : value.toString())
 
@@ -37,4 +53,67 @@ export const calculateModifier = (score) => {
 export const parseSignedNumber = (bonusText) => {
   const match = bonusText.match(/-?\d+/)
   return match ? parseInt(match[0], 10) : 0
+}
+
+export const sanitizeUnsignedNumber = (value, maxValue = 999) => {
+  const match = value.match(/\d+/)
+  if (!match) return ''
+  const number = Math.min(parseInt(match[0], 10), maxValue)
+  return `${number}`
+}
+
+export const sanitizeSignedNumber = (value, maxValue = 999) => {
+  const match = value.match(/[+-]?\d+/)
+  if (!match) return ''
+  const parsedNumber = parseInt(match[0], 10)
+  const clamped = Math.min(Math.abs(parsedNumber), maxValue)
+  return parsedNumber >= 0 ? `+${clamped}` : `-${clamped}`
+}
+
+export const clampCurrentHitPoints = (currentValue, maxValue, maxLimit = 999) => {
+  if (!maxValue) return currentValue
+  const current = currentValue ? parseInt(currentValue, 10) : 0
+  const max = maxValue ? parseInt(maxValue, 10) : 0
+  return `${Math.min(current, max, maxLimit)}`
+}
+
+export const addItem = (list, item) => [...list, item]
+
+export const removeItemById = (list, id) => list.filter((item) => item.id !== id)
+
+export const updateItemById = (list, id, updateFn) =>
+  list.map((item) => (item.id === id ? updateFn(item) : item))
+
+export const createInventoryItem = (listName) => {
+  const newItem = { id: Date.now() }
+
+  if (listName === 'items') {
+    newItem.label = 'Nuovo Oggetto'
+    newItem.value = 'x1'
+    newItem.description = 'Descrizione...'
+  } else {
+    newItem.label = 'Nuovo:'
+    newItem.value = 'Valore...'
+  }
+
+  return newItem
+}
+
+export const createActionEntry = (listName) => {
+  const newRow = { id: Date.now() }
+
+  if (listName === 'attacks') {
+    newRow.name = 'Nuovo Attacco'
+    newRow.bonus = '+0'
+    newRow.damage = '1d?'
+    newRow.notes = '-'
+  } else if (listName === 'features') {
+    newRow.name = 'Nuovo Elemento'
+    newRow.effect = 'Descrizione.'
+  } else if (listName === 'traits') {
+    newRow.name = 'Nuovo Tratto'
+    newRow.description = 'Descrizione.'
+  }
+
+  return newRow
 }

@@ -1,5 +1,5 @@
 import Editable from './Editable'
-import { formatSignedNumber } from '../utils'
+import { formatSignedNumber, sanitizeUnsignedNumber } from '../utils.js'
 
 const STAT_DEFINITIONS = [
   { key: 'str', label: 'FOR' }, { key: 'dex', label: 'DES' }, { key: 'con', label: 'COS' },
@@ -7,13 +7,6 @@ const STAT_DEFINITIONS = [
 ]
 
 export default function Stats({ stats, modifiers, onFieldChange }) {
-  const sanitizeUnsignedNumber = (value) => {
-    const match = value.match(/\d+/)
-    if (!match) return ''
-    const number = Math.min(parseInt(match[0], 10), 999)
-    return `${number}`
-  }
-
   return (
     <div className="ability-grid">
       {STAT_DEFINITIONS.map(({ key, label }) => (

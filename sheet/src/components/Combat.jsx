@@ -1,29 +1,12 @@
 import Editable from './Editable'
-import { formatSignedNumber } from '../utils.js'
+import {
+  clampCurrentHitPoints,
+  formatSignedNumber,
+  sanitizeSignedNumber,
+  sanitizeUnsignedNumber
+} from '../utils.js'
 
 export default function Combat({ combatData, initiativeModifier, onFieldChange }) {
-  const sanitizeSignedNumber = (value) => {
-    const match = value.match(/[+-]?\d+/)
-    if (!match) return ''
-    const parsedNumber = parseInt(match[0], 10)
-    const clamped = Math.min(Math.abs(parsedNumber), 999)
-    return parsedNumber >= 0 ? `+${clamped}` : `-${clamped}`
-  }
-
-  const sanitizeUnsignedNumber = (value) => {
-    const match = value.match(/\d+/)
-    if (!match) return ''
-    const number = Math.min(parseInt(match[0], 10), 999)
-    return `${number}`
-  }
-
-  const clampCurrentHitPoints = (currentValue, maxValue) => {
-    const current = currentValue ? parseInt(currentValue, 10) : 0
-    const max = maxValue ? parseInt(maxValue, 10) : 0
-    if (!maxValue) return currentValue
-    return `${Math.min(current, max, 999)}`
-  }
-
   return (
     <section className="combat-section">
       <div className="combat-grid">
@@ -57,48 +40,48 @@ export default function Combat({ combatData, initiativeModifier, onFieldChange }
         <div className="combat-card combat-card--highlight hp-card">
           <div className="hp-row">
             <div className="combat-label">PF Massimi</div>
-          <Editable
-            className="combat-value combat-value--highlight"
-            tagName="div"
-            value={combatData.maxHitPoints}
-            defaultValue="0"
-            sanitize={sanitizeUnsignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => {
-              onFieldChange('combat', 'maxHitPoints', val)
-              const clampedCurrent = clampCurrentHitPoints(combatData.currentHitPoints, val)
-              if (clampedCurrent !== combatData.currentHitPoints) {
-                onFieldChange('combat', 'currentHitPoints', clampedCurrent)
-              }
-            }}
-          />
+            <Editable
+              className="combat-value combat-value--highlight"
+              tagName="div"
+              value={combatData.maxHitPoints}
+              defaultValue="0"
+              sanitize={sanitizeUnsignedNumber}
+              inputMode="numeric"
+              updateOnInput={false}
+              onChange={(val) => {
+                onFieldChange('combat', 'maxHitPoints', val)
+                const clampedCurrent = clampCurrentHitPoints(combatData.currentHitPoints, val)
+                if (clampedCurrent !== combatData.currentHitPoints) {
+                  onFieldChange('combat', 'currentHitPoints', clampedCurrent)
+                }
+              }}
+            />
           </div>
           <div className="hp-row">
             <div className="combat-label">PF Attuali</div>
-          <Editable
-            className="combat-value combat-value--highlight"
-            tagName="div"
-            value={combatData.currentHitPoints}
-            defaultValue="0"
-            sanitize={(val) => clampCurrentHitPoints(sanitizeUnsignedNumber(val), combatData.maxHitPoints)}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'currentHitPoints', clampCurrentHitPoints(val, combatData.maxHitPoints))}
-          />
+            <Editable
+              className="combat-value combat-value--highlight"
+              tagName="div"
+              value={combatData.currentHitPoints}
+              defaultValue="0"
+              sanitize={(val) => clampCurrentHitPoints(sanitizeUnsignedNumber(val), combatData.maxHitPoints)}
+              inputMode="numeric"
+              updateOnInput={false}
+              onChange={(val) => onFieldChange('combat', 'currentHitPoints', clampCurrentHitPoints(val, combatData.maxHitPoints))}
+            />
           </div>
           <div className="hp-row">
             <div className="combat-label">PF Temporanei</div>
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.temporaryHitPoints}
-            defaultValue="0"
-            sanitize={sanitizeUnsignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'temporaryHitPoints', val)}
-          />
+            <Editable
+              className="combat-value"
+              tagName="div"
+              value={combatData.temporaryHitPoints}
+              defaultValue="0"
+              sanitize={sanitizeUnsignedNumber}
+              inputMode="numeric"
+              updateOnInput={false}
+              onChange={(val) => onFieldChange('combat', 'temporaryHitPoints', val)}
+            />
           </div>
         </div>
       </div>

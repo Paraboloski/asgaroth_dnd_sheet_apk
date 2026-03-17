@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "db:seed": "node ./db/schema.cjs"
   },
   "build": {
     "productName": "Scheda D&D",
@@ -22,7 +23,9 @@
     },
     "files": [
       "dist/**",
-      "src/main.cjs"
+      "src/main.cjs",
+      "db/db.sqlite",
+      "db/schema.cjs"
     ],
     "extraResources": [
       {
@@ -47,14 +50,15 @@
     },
     "mac": {
       "target": "dmg",
-      "artifactName": "Scheda-DnD-${version}.${ext}"
+      "artifactName": "Scheda-DnD-macos-${version}.${ext}"
     },
     "linux": {
       "target": "AppImage",
-      "artifactName": "Scheda-DnD-${version}.${ext}"
+      "artifactName": "Scheda-DnD-linux-${version}.${ext}"
     }
   },
   "dependencies": {
+    "better-sqlite3": "^12.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

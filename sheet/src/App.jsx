@@ -6,32 +6,38 @@ import SavingThrows from './components/SavingThrows'
 import Combat from './components/Combat'
 import Inventory from './components/Inventory'
 import Actions from './components/Actions'
-import { createInitialCharacterState, calculateModifier, parseSignedNumber } from './utils'
+import {
+  createInitialCharacterState,
+  calculateModifier,
+  parseSignedNumber,
+  fetchCharacterState,
+  saveCharacterState,
+  notifyUnsavedChanges,
+  addItem,
+  createActionEntry,
+  createInventoryItem,
+  removeItemById,
+  updateItemById
+} from './utils'
 
 export default function App() {
-  const [characterData, setCharacterData] = useState(() => createInitialCharacterState())
-  const lastSavedRef = useRef(JSON.stringify(createInitialCharacterState()))
-  const ipcRendererRef = useRef(null)
+  const initialStateRef = useRef(createInitialCharacterState())
+  const [characterData, setCharacterData] = useState(() => initialStateRef.current)
+  const lastSavedRef = useRef(JSON.stringify(initialStateRef.current))
+  const importInputRef = useRef(null)
   const [isBugModalOpen, setIsBugModalOpen] = useState(false)
   const [bugReporterName, setBugReporterName] = useState('')
   const [bugDescription, setBugDescription] = useState('')
 
   useEffect(() => {
-    try {
-      const electron = window.require ? window.require('electron') : null
-      ipcRendererRef.current = electron ? electron.ipcRenderer : null
-    } catch {
-      ipcRendererRef.current = null
-    }
-
-    const savedState = localStorage.getItem('dnd_react_sheet')
-    if (savedState) {
-      try {
-        setCharacterData(JSON.parse(savedState))
-        lastSavedRef.current = savedState
-      } catch (error) {
-        console.error('Errore nel caricamento dei dati', error)
-      }
+    let isActive = true
+    fetchCharacterState().then((state) => {
+      if (!isActive) return
+      setCharacterData(state)
+      lastSavedRef.current = JSON.stringify(state)
+    })
+    return () => {
+      isActive = false
     }
   }, [])
 
@@ -48,6 +54,8 @@ export default function App() {
     [characterData.combat.profBonus],
   )
 
+  const serializedState = useMemo(() => JSON.stringify(characterData), [characterData])
+
   const updateSectionField = (section, key, value) => {
     setCharacterData((prev) => ({
       ...prev,
@@ -62,10 +70,70 @@ export default function App() {
     }))
   }
 
-  const handleSave = () => {
-    localStorage.setItem('dnd_react_sheet', JSON.stringify(characterData))
-    lastSavedRef.current = JSON.stringify(characterData)
-    alert("Scheda salvata con successo! Puoi chiudere l'app.")
+  const handleSave = async () => {
+    const success = await saveCharacterState(characterData)
+    if (success) {
+      lastSavedRef.current = serializedState
+      alert("Scheda salvata con successo! Puoi chiudere l'app.")
+      return
+    }
+
+    alert("Salvataggio disponibile solo nell'app desktop.")
+  }
+
+  const handleExport = () => {
+    const fileName = `scheda-${new Date().toISOString().slice(0, 10)}.json`
+    const payload = JSON.stringify(characterData, null, 2)
+    const blob = new Blob([payload], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const isValidImport = (data) =>
+    data &&
+    typeof data === 'object' &&
+    data.header &&
+    data.stats &&
+    data.combat &&
+    data.inventory &&
+    Array.isArray(data.inventory.proficiencies) &&
+    Array.isArray(data.inventory.items) &&
+    Array.isArray(data.inventory.equipment) &&
+    data.actions &&
+    Array.isArray(data.actions.attacks) &&
+    Array.isArray(data.actions.features) &&
+    Array.isArray(data.actions.traits)
+
+  const handleImportFile = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result)
+        if (!isValidImport(parsed)) {
+          alert('File JSON non valido o incompleto.')
+          return
+        }
+        setCharacterData(parsed)
+      } catch {
+        alert('Impossibile leggere il file JSON.')
+      } finally {
+        event.target.value = ''
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImport = () => {
+    importInputRef.current?.click()
   }
 
   const openBugReport = () => {
@@ -91,29 +159,17 @@ export default function App() {
   }
 
   useEffect(() => {
-    const hasUnsavedChanges = JSON.stringify(characterData) !== lastSavedRef.current
-    if (ipcRendererRef.current) {
-      ipcRendererRef.current.send('set-unsaved-changes', hasUnsavedChanges)
-    }
-  }, [characterData])
+    const hasUnsavedChanges = serializedState !== lastSavedRef.current
+    notifyUnsavedChanges(hasUnsavedChanges)
+  }, [serializedState])
 
   const addInventoryItem = (listName) => {
-    const newItem = { id: Date.now() }
-    
-    if (listName === 'items') {
-      newItem.label = "Nuovo Oggetto"
-      newItem.value = "x1"
-      newItem.description = "Descrizione..."
-    } else {
-      newItem.label = "Nuovo:"
-      newItem.value = "Valore..."
-    }
-
+    const newItem = createInventoryItem(listName)
     setCharacterData((prev) => ({
       ...prev,
       inventory: {
         ...prev.inventory,
-        [listName]: [...prev.inventory[listName], newItem]
+        [listName]: addItem(prev.inventory[listName], newItem)
       }
     }))
   }
@@ -123,7 +179,7 @@ export default function App() {
       ...prev,
       inventory: {
         ...prev.inventory,
-        [listName]: prev.inventory[listName].filter(item => item.id !== id)
+        [listName]: removeItemById(prev.inventory[listName], id)
       }
     }))
   }
@@ -133,34 +189,21 @@ export default function App() {
       ...prev,
       inventory: {
         ...prev.inventory,
-        [listName]: prev.inventory[listName].map(item => 
-          item.id === id ? { ...item, [field]: newValue } : item
-        )
+        [listName]: updateItemById(prev.inventory[listName], id, (item) => ({
+          ...item,
+          [field]: newValue
+        }))
       }
     }))
   }
 
   const addActionEntry = (listName) => {
-    const newRow = { id: Date.now() }
-    
-    if (listName === 'attacks') {
-      newRow.name = "Nuovo Attacco"
-      newRow.bonus = "+0"
-      newRow.damage = "1d?"
-      newRow.notes = "-"
-    } else if (listName === 'features') {
-      newRow.name = "Nuovo Elemento"
-      newRow.effect = "Descrizione."
-    } else if (listName === 'traits') {
-      newRow.name = "Nuovo Tratto"
-      newRow.description = "Descrizione."
-    }
-
+    const newRow = createActionEntry(listName)
     setCharacterData((prev) => ({
       ...prev,
       actions: {
         ...prev.actions,
-        [listName]: [...prev.actions[listName], newRow]
+        [listName]: addItem(prev.actions[listName], newRow)
       }
     }))
   }
@@ -170,7 +213,7 @@ export default function App() {
       ...prev,
       actions: {
         ...prev.actions,
-        [listName]: prev.actions[listName].filter(item => item.id !== id)
+        [listName]: removeItemById(prev.actions[listName], id)
       }
     }))
   }
@@ -180,16 +223,29 @@ export default function App() {
       ...prev,
       actions: {
         ...prev.actions,
-        [listName]: prev.actions[listName].map(item => 
-          item.id === id ? { ...item, [field]: newValue } : item
-        )
+        [listName]: updateItemById(prev.actions[listName], id, (item) => ({
+          ...item,
+          [field]: newValue
+        }))
       }
     }))
   }
 
   return (
     <div className="app">
-      <Navbar onSave={handleSave} onReportBug={() => setIsBugModalOpen(true)} />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json"
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
+      />
+      <Navbar
+        onSave={handleSave}
+        onExport={handleExport}
+        onImport={handleImport}
+        onReportBug={() => setIsBugModalOpen(true)}
+      />
       {isBugModalOpen && (
         <div className="modal-backdrop" role="presentation" onClick={() => setIsBugModalOpen(false)}>
           <div className="modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>

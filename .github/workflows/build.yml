@@ -1,4 +1,4 @@
-name: Build & Release
+name: Build and Release
 
 on:
   push:
@@ -9,7 +9,6 @@ permissions:
   contents: write
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_VERSION: 24
 
@@ -17,7 +16,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
-      - name: Cleanup
+      - name: Cleanup Release
         run: |
           gh release delete ${{ github.ref_name }} --repo ${{ github.repository }} --yes || true
           gh release create ${{ github.ref_name }} --repo ${{ github.repository }} --title "${{ github.ref_name }}"
@@ -32,18 +31,15 @@ jobs:
       run:
         working-directory: ./sheet
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{env.NODE_VERSION}}
       
       - run: npm install --legacy-peer-deps
       
-      - name: Build React App
-        run: npm run build
-
-      - name: Compile
-        run: npx electron-builder --publish never
+      - run: npm run build
+      - run: npx electron-builder --publish never
       
       - name: Upload
         shell: bash

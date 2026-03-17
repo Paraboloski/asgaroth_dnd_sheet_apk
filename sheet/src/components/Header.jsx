@@ -1,12 +1,6 @@
 import Editable from './Editable'
+import { sanitizeUnsignedNumber } from '../utils.js'
 export default function Header({ headerData, onFieldChange }) {
-  const sanitizeUnsignedNumber = (value) => {
-    const match = value.match(/\d+/)
-    if (!match) return ''
-    const number = Math.min(parseInt(match[0], 10), 999)
-    return `${number}`
-  }
-
   return (
     <header className="sheet-header">
       <div>
