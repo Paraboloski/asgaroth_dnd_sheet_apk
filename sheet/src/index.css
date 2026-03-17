@@ -565,3 +565,61 @@ body {
         box-shadow: none;
     }
 }
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .sheet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .sheet-meta {
+        text-align: left;
+    }
+
+    .sheet-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+        gap: 30px;
+    }
+
+    .ability-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .combat-grid {
+        flex-wrap: wrap;
+    }
+
+    .combat-card {
+        flex: 1 1 45%;
+    }
+    .action-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap; 
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .ability-grid {
+        grid-template-columns: 1fr; 
+    }
+
+    .combat-card {
+        flex: 1 1 100%;
+    }
+}
