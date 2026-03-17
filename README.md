@@ -1,6 +1,6 @@
 # Asgaroth D&D Character Sheet
 
-Una soluzione leggera per la gestione della scheda personaggio di D&D 5e. Progettata per essere rapida, parzialmente automatizzata e utilizzabile ovunque: **Desktop e Mobile.**
+Una soluzione leggera e standalone per la gestione della scheda personaggio di D&D 5e. Progettata per essere rapida, parzialmente automatizzata e utilizzabile ovunque: **Desktop e Mobile.**
 
 ---
 
