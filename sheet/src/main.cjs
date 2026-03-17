@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let hasUnsavedChanges = false;
@@ -27,8 +28,19 @@ function createWindow() {
   } else {
     const appPath = app.getAppPath();
     const asarPath = appPath.endsWith('.asar') ? appPath : path.join(process.resourcesPath, 'app.asar');
-    const indexPath = path.join(asarPath, 'dist', 'index.html');
-    mainWindow.loadFile(indexPath);
+    const candidates = [
+      path.join(asarPath, 'dist', 'index.html'),
+      path.join(asarPath, 'index.html'),
+    ];
+    const indexPath = candidates.find((candidate) => fs.existsSync(candidate));
+    if (indexPath) {
+      mainWindow.loadFile(indexPath);
+    } else {
+      dialog.showErrorBox(
+        'Errore di caricamento',
+        `Nessun index.html trovato.\nControllati:\n${candidates.join('\n')}`
+      );
+    }
   }
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
