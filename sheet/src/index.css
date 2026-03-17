@@ -517,21 +517,44 @@ body {
 }
 
 @media print {
-
-    .toolbar,
-    .no-print {
-        display: none !important;
+    @page {
+        size: A4 portrait;
+        margin: 10mm; 
     }
 
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--color-surface);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .toolbar,
+    .no-print,
+    .modal-backdrop {
+        display: none !important;
+    }
 
     .sheet {
         box-shadow: none;
         border: none;
         max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .combat-card, 
+    .ability-card, 
+    .section-header, 
+    .action-table {
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     [contenteditable="true"] {
         padding: 0;
+        border: none;
     }
 
     [contenteditable="true"]:hover {
