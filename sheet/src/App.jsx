@@ -74,11 +74,10 @@ export default function App() {
     const success = await saveCharacterState(characterData)
     if (success) {
       lastSavedRef.current = serializedState
+      window.ipcRenderer.send('set-unsaved-changes', false);
       alert("Scheda salvata con successo! Puoi chiudere l'app.")
       return
     }
-
-    alert("Salvataggio disponibile solo nell'app desktop.")
   }
 
   const handleExport = () => {
