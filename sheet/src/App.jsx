@@ -11,6 +11,7 @@ import {
   calculateModifier,
   parseSignedNumber,
   fetchCharacterState,
+  normalizeCharacterState,
   saveCharacterState,
   notifyUnsavedChanges,
   addItem,
@@ -75,12 +76,12 @@ export default function App() {
       const success = await saveCharacterState(characterData)
       if (success) {
         lastSavedRef.current = serializedState
-        notifyUnsavedChanges(false) 
+        notifyUnsavedChanges(false)
         alert("Scheda salvata con successo! Puoi chiudere l'app.")
       } else {
         alert("Errore: Impossibile salvare la scheda. Controlla il processo principale di Electron.")
       }
-    } catch (error) {
+    } catch {
       alert("Si è verificato un errore imprevisto durante il salvataggio.")
     }
   }
@@ -110,6 +111,7 @@ export default function App() {
     Array.isArray(data.inventory.items) &&
     Array.isArray(data.inventory.equipment) &&
     data.actions &&
+    (data.actions.statuses === undefined || Array.isArray(data.actions.statuses)) &&
     Array.isArray(data.actions.attacks) &&
     Array.isArray(data.actions.features) &&
     Array.isArray(data.actions.traits)
@@ -126,7 +128,7 @@ export default function App() {
           alert('File JSON non valido o incompleto.')
           return
         }
-        setCharacterData(parsed)
+        setCharacterData(normalizeCharacterState(parsed))
       } catch {
         alert('Impossibile leggere il file JSON.')
       } finally {
@@ -300,6 +302,9 @@ export default function App() {
               modifiers={statModifiers}
               proficiencyBonus={proficiencyBonusValue}
               onToggleSkill={toggleSkill}
+              deathSaveSuccesses={characterData.combat.deathSaveSuccesses}
+              deathSaveFailures={characterData.combat.deathSaveFailures}
+              onDeathSaveChange={(field, value) => updateSectionField('combat', field, value)}
             />
             <Inventory
               inventoryData={characterData.inventory}

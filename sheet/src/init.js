@@ -1,5 +1,83 @@
+export const BASE_ACTION_STATUSES = [
+  {
+    "id": "status-accecato",
+    "name": "Accecato",
+    "description": "Non vedi. Fallisci sempre prove basate sulla vista. Svantaggio ai TPC. Vantaggio ai tiri subiti.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-avvelenato",
+    "name": "Avvelenato",
+    "description": "Svantaggio ai TPC e alle prove di caratteristica.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-affascinato",
+    "name": "Affascinato",
+    "description": "Non puoi attaccare colui che ti ha affascinato, che avrà vantaggio nelle interazioni sociali contro di te.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-atterrato",
+    "name": "Atterrato",
+    "description": "Movimento limitato, puoi solo strisciare. TPC subiti entro 1,5m hanno sempre vantaggio, altrimenti sempre svantaggio.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-incosciente",
+    "name": "Incosciente/Paralizzato/Stordito",
+    "description": "Incapace di agire. Fallisci sempre TS Forza/Destrezza. TPC subiti sempre con vantaggio.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-incapacitato",
+    "name": "Incapacitato",
+    "description": "Non può compiere azioni o reazioni.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-invisibile",
+    "name": "Invisibile",
+    "description": "Non visibile senza mezzi speciali. TPC sferrati con vantaggio, quelli subiti con svantaggio.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-pietrificato",
+    "name": "Pietrificato",
+    "description": "Trasformato in pietra. Incapace di agire ma resistente ai danni.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-spaventato",
+    "name": "Spaventato",
+    "description": "Svantaggio a prove e TPC in presenza della fonte. Non può avvicinarsi ad essa.",
+    "active": false,
+    "custom": false
+  },
+  {
+    "id": "status-trattenuto",
+    "name": "Trattenuto",
+    "description": "Velocità 0m. TPC subiti con vantaggio. TPC sferrati con svantaggio. Svantaggio ai TS Destrezza.",
+    "active": false,
+    "custom": false
+  }
+]
+
+export const BASE_ACTION_STATUS_IDS = new Set(BASE_ACTION_STATUSES.map((status) => status.id))
+
+export const createDefaultStatuses = () => BASE_ACTION_STATUSES.map((status) => ({ ...status }))
+
 export const DEFAULT_STATE = {
   header: {
+    profileImage: '',
     name: 'Nome Personaggio',
     class1: 'Classe 1',
     class2: 'Classe 2',
@@ -23,6 +101,8 @@ export const DEFAULT_STATE = {
     maxHitPoints: '10',
     currentHitPoints: '10',
     temporaryHitPoints: '0',
+    deathSaveSuccesses: '0',
+    deathSaveFailures: '0',
     honor: '+0',
     sanity: '+0',
     occult: '+0',
@@ -32,14 +112,15 @@ export const DEFAULT_STATE = {
   },
   skills: {},
   inventory: {
-    proficiencies: [{ id: 1, label: 'Nome:', value: '...' }],
-    items: [{ id: 2, label: 'Nome', value: 'x?', description: '...' }],
-    equipment: [{ id: 3, label: 'Nome:', value: '...' }]
+    proficiencies: [],
+    items: [],
+    equipment: []
   },
   actions: {
-    attacks: [{ id: 4, name: 'Attacco 1', bonus: '+?', damage: '1d? + ?', notes: '...' }],
-    features: [{ id: 5, name: 'Tratto 1', effect: 'Descrizione 1.' }],
-    traits: [{ id: 6, name: 'Tratto 1', description: 'Descrizione 1.' }]
+    statuses: [],
+    attacks: [],
+    features: [],
+    traits: []
   }
 }
 

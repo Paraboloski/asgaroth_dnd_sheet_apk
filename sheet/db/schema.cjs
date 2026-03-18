@@ -6,6 +6,7 @@ const Database = require('better-sqlite3');
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS header (
     id INTEGER PRIMARY KEY,
+    profile_image TEXT,
     name TEXT,
     class1 TEXT,
     class2 TEXT,
@@ -31,6 +32,8 @@ const SCHEMA_SQL = `
     max_hit_points TEXT,
     current_hit_points TEXT,
     temporary_hit_points TEXT,
+    death_save_successes TEXT,
+    death_save_failures TEXT,
     honor TEXT,
     sanity TEXT,
     occult TEXT,
@@ -45,18 +48,25 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS inventory_proficiencies (
     id INTEGER PRIMARY KEY,
     label TEXT,
-    value TEXT
+    value TEXT,
+    name TEXT,
+    description TEXT
   );
   CREATE TABLE IF NOT EXISTS inventory_items (
     id INTEGER PRIMARY KEY,
     label TEXT,
     value TEXT,
-    description TEXT
+    description TEXT,
+    name TEXT,
+    quantity TEXT
   );
   CREATE TABLE IF NOT EXISTS inventory_equipment (
     id INTEGER PRIMARY KEY,
     label TEXT,
-    value TEXT
+    value TEXT,
+    name TEXT,
+    description TEXT,
+    bonus TEXT
   );
   CREATE TABLE IF NOT EXISTS actions_attacks (
     id INTEGER PRIMARY KEY,
@@ -75,7 +85,71 @@ const SCHEMA_SQL = `
     name TEXT,
     description TEXT
   );
+  CREATE TABLE IF NOT EXISTS actions_statuses (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    active INTEGER NOT NULL DEFAULT 0,
+    custom INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  );
 `;
+
+const ensureColumn = (database, tableName, columnName, definition) => {
+  const columns = database.prepare(`PRAGMA table_info(${tableName})`).all();
+  const hasColumn = columns.some((column) => column.name === columnName);
+  if (!hasColumn) {
+    database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  }
+};
+
+const applyMigrations = (database) => {
+  ensureColumn(database, 'header', 'profile_image', 'TEXT');
+  ensureColumn(database, 'combat', 'death_save_successes', 'TEXT');
+  ensureColumn(database, 'combat', 'death_save_failures', 'TEXT');
+  ensureColumn(database, 'inventory_proficiencies', 'name', 'TEXT');
+  ensureColumn(database, 'inventory_proficiencies', 'description', 'TEXT');
+  ensureColumn(database, 'inventory_items', 'name', 'TEXT');
+  ensureColumn(database, 'inventory_items', 'quantity', 'TEXT');
+  ensureColumn(database, 'inventory_equipment', 'name', 'TEXT');
+  ensureColumn(database, 'inventory_equipment', 'description', 'TEXT');
+  ensureColumn(database, 'inventory_equipment', 'bonus', 'TEXT');
+  database.exec(`
+    UPDATE inventory_proficiencies
+    SET
+      name = COALESCE(name, label, ''),
+      description = COALESCE(description, value, '')
+    WHERE name IS NULL OR description IS NULL;
+
+    UPDATE inventory_items
+    SET
+      name = COALESCE(name, label, ''),
+      quantity = COALESCE(quantity, value, '0'),
+      description = COALESCE(description, '')
+    WHERE name IS NULL OR quantity IS NULL OR description IS NULL;
+
+    UPDATE inventory_equipment
+    SET
+      name = COALESCE(name, label, ''),
+      description = COALESCE(description, ''),
+      bonus = COALESCE(bonus, value, '+0')
+    WHERE name IS NULL OR description IS NULL OR bonus IS NULL;
+  `);
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS actions_statuses (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      active INTEGER NOT NULL DEFAULT 0,
+      custom INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+  ensureColumn(database, 'actions_statuses', 'description', 'TEXT');
+  ensureColumn(database, 'actions_statuses', 'active', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn(database, 'actions_statuses', 'custom', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn(database, 'actions_statuses', 'sort_order', 'INTEGER NOT NULL DEFAULT 0');
+};
 
 const seedFromState = (database, state) => {
   const run = database.transaction(() => {
@@ -90,12 +164,14 @@ const seedFromState = (database, state) => {
       DELETE FROM actions_attacks;
       DELETE FROM actions_features;
       DELETE FROM actions_traits;
+      DELETE FROM actions_statuses;
     `);
 
     database.prepare(`
-      INSERT INTO header (id, name, class1, class2, race, background, alignment, level, player)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO header (id, profile_image, name, class1, class2, race, background, alignment, level, player)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
+      state.header.profileImage ?? '',
       state.header.name,
       state.header.class1,
       state.header.class2,
@@ -121,15 +197,17 @@ const seedFromState = (database, state) => {
     database.prepare(`
       INSERT INTO combat (
         id, ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
-        honor, sanity, occult, passive, prof_bonus, hero_points
+        death_save_successes, death_save_failures, honor, sanity, occult, passive, prof_bonus, hero_points
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       state.combat.ac,
       state.combat.speed,
       state.combat.maxHitPoints,
       state.combat.currentHitPoints,
       state.combat.temporaryHitPoints,
+      state.combat.deathSaveSuccesses,
+      state.combat.deathSaveFailures,
       state.combat.honor,
       state.combat.sanity,
       state.combat.occult,
@@ -144,24 +222,24 @@ const seedFromState = (database, state) => {
     });
 
     const insertProficiency = database.prepare(
-      'INSERT INTO inventory_proficiencies (id, label, value) VALUES (?, ?, ?)'
+      'INSERT INTO inventory_proficiencies (id, label, value, name, description) VALUES (?, ?, ?, ?, ?)'
     );
     state.inventory.proficiencies.forEach((item) => {
-      insertProficiency.run(item.id, item.label, item.value);
+      insertProficiency.run(item.id, item.name, item.description, item.name, item.description);
     });
 
     const insertItem = database.prepare(
-      'INSERT INTO inventory_items (id, label, value, description) VALUES (?, ?, ?, ?)'
+      'INSERT INTO inventory_items (id, label, value, description, name, quantity) VALUES (?, ?, ?, ?, ?, ?)'
     );
     state.inventory.items.forEach((item) => {
-      insertItem.run(item.id, item.label, item.value, item.description);
+      insertItem.run(item.id, item.name, item.quantity, item.description ?? '', item.name, item.quantity);
     });
 
     const insertEquipment = database.prepare(
-      'INSERT INTO inventory_equipment (id, label, value) VALUES (?, ?, ?)'
+      'INSERT INTO inventory_equipment (id, label, value, name, description, bonus) VALUES (?, ?, ?, ?, ?, ?)'
     );
     state.inventory.equipment.forEach((item) => {
-      insertEquipment.run(item.id, item.label, item.value);
+      insertEquipment.run(item.id, item.name, item.bonus, item.name, item.description ?? '', item.bonus);
     });
 
     const insertAttack = database.prepare(
@@ -184,6 +262,21 @@ const seedFromState = (database, state) => {
     state.actions.traits.forEach((trait) => {
       insertTrait.run(trait.id, trait.name, trait.description);
     });
+
+    const insertStatus = database.prepare(
+      'INSERT INTO actions_statuses (id, name, description, active, custom, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    const statuses = Array.isArray(state.actions?.statuses) ? state.actions.statuses : [];
+    statuses.forEach((status, index) => {
+      insertStatus.run(
+        String(status.id),
+        status.name,
+        status.description,
+        status.active ? 1 : 0,
+        status.custom ? 1 : 0,
+        index
+      );
+    });
   });
 
   run();
@@ -202,6 +295,7 @@ const seedDatabaseFile = async (dbPath = path.join(__dirname, 'db.sqlite'), stat
   }
   const db = new Database(dbPath);
   db.exec(SCHEMA_SQL);
+  applyMigrations(db);
   seedFromState(db, resolvedState);
   db.close();
   return dbPath;
@@ -220,6 +314,7 @@ if (require.main === module) {
 
 module.exports = {
   SCHEMA_SQL,
+  applyMigrations,
   seedFromState,
   seedDatabaseFile
 };

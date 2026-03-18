@@ -2,7 +2,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const dbUtils = require(path.join(__dirname, '..', 'db', 'schema.cjs'));
-const { SCHEMA_SQL, seedFromState } = dbUtils;
+const { SCHEMA_SQL, applyMigrations, seedFromState } = dbUtils;
 
 let mainWindow;
 let hasUnsavedChanges = false;
@@ -39,7 +39,7 @@ const ensureUserDb = () => {
       dialog.showErrorBox(
         'Database mancante',
         `db/db.sqlite non trovato nel pacchetto.\n\n` +
-          `Assicurati che "db/db.sqlite" sia incluso nei file di build.`
+        `Assicurati che "db/db.sqlite" sia incluso nei file di build.`
       );
     }
   }
@@ -78,6 +78,7 @@ const getDatabase = () => {
   const dbPath = ensureUserDb();
   const instance = new Database(dbPath);
   instance.exec(SCHEMA_SQL);
+  applyMigrations(instance);
   ensureSeedData(instance);
   db = instance;
   return db;
@@ -88,7 +89,7 @@ const readInitialStateFromDb = () => {
   if (!database) return null;
 
   const headerRow = database.prepare(`
-    SELECT name, class1, class2, race, background, alignment, level, player
+    SELECT profile_image, name, class1, class2, race, background, alignment, level, player
     FROM header LIMIT 1
   `).get();
   const statsRow = database.prepare(`
@@ -97,7 +98,7 @@ const readInitialStateFromDb = () => {
   `).get();
   const combatRow = database.prepare(`
     SELECT ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
-           honor, sanity, occult, passive, prof_bonus, hero_points
+           death_save_successes, death_save_failures, honor, sanity, occult, passive, prof_bonus, hero_points
     FROM combat LIMIT 1
   `).get();
 
@@ -110,18 +111,25 @@ const readInitialStateFromDb = () => {
   });
 
   const proficiencies = database.prepare(
-    'SELECT id, label, value FROM inventory_proficiencies ORDER BY id'
+    "SELECT id, COALESCE(name, label, '') AS name, COALESCE(description, value, '') AS description FROM inventory_proficiencies ORDER BY id"
   ).all();
   const items = database.prepare(
-    'SELECT id, label, value, description FROM inventory_items ORDER BY id'
+    "SELECT id, COALESCE(name, label, '') AS name, COALESCE(quantity, value, '0') AS quantity FROM inventory_items ORDER BY id"
   ).all();
   const equipment = database.prepare(
-    'SELECT id, label, value FROM inventory_equipment ORDER BY id'
+    "SELECT id, COALESCE(name, label, '') AS name, COALESCE(bonus, value, '+0') AS bonus FROM inventory_equipment ORDER BY id"
   ).all();
 
   const attacks = database.prepare(
     'SELECT id, name, bonus, damage, notes FROM actions_attacks ORDER BY id'
   ).all();
+  const statuses = database.prepare(
+    'SELECT id, name, description, active, custom FROM actions_statuses ORDER BY sort_order, id'
+  ).all().map((status) => ({
+    ...status,
+    active: Boolean(status.active),
+    custom: Boolean(status.custom)
+  }));
   const features = database.prepare(
     'SELECT id, name, effect FROM actions_features ORDER BY id'
   ).all();
@@ -131,6 +139,7 @@ const readInitialStateFromDb = () => {
 
   return {
     header: {
+      profileImage: headerRow.profile_image,
       name: headerRow.name,
       class1: headerRow.class1,
       class2: headerRow.class2,
@@ -154,6 +163,8 @@ const readInitialStateFromDb = () => {
       maxHitPoints: combatRow.max_hit_points,
       currentHitPoints: combatRow.current_hit_points,
       temporaryHitPoints: combatRow.temporary_hit_points,
+      deathSaveSuccesses: combatRow.death_save_successes,
+      deathSaveFailures: combatRow.death_save_failures,
       honor: combatRow.honor,
       sanity: combatRow.sanity,
       occult: combatRow.occult,
@@ -168,6 +179,7 @@ const readInitialStateFromDb = () => {
       equipment
     },
     actions: {
+      statuses,
       attacks,
       features,
       traits
@@ -215,7 +227,7 @@ function createWindow() {
 
   if (!app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools(); 
+    mainWindow.webContents.openDevTools();
   } else {
     const appPath = app.getAppPath();
     const asarPath = appPath.endsWith('.asar') ? appPath : path.join(process.resourcesPath, 'app.asar');

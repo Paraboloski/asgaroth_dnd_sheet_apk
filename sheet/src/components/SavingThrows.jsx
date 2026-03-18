@@ -18,7 +18,20 @@ const SKILL_DEFINITIONS = [
   { id: 'survival', label: 'Sopravvivenza (Sag):', stat: 'wis' }, { id: 'history', label: 'Storia (Int):', stat: 'int' }
 ]
 
-export default function SavingThrows({ skillsData, modifiers, proficiencyBonus, onToggleSkill }) {
+const DEATH_SAVE_LABELS = [
+  { field: 'deathSaveSuccesses', label: 'SUCCESSI' },
+  { field: 'deathSaveFailures', label: 'FALLIMENTI' }
+]
+
+export default function SavingThrows({
+  skillsData,
+  modifiers,
+  proficiencyBonus,
+  onToggleSkill,
+  deathSaveSuccesses = '0',
+  deathSaveFailures = '0',
+  onDeathSaveChange,
+}) {
   const renderRow = ({ id, label, stat }) => {
     const isProficient = Boolean(skillsData[id])
     const total = modifiers[stat] + (isProficient ? proficiencyBonus : 0)
@@ -36,6 +49,19 @@ export default function SavingThrows({ skillsData, modifiers, proficiencyBonus, 
     )
   }
 
+  const deathSaveValues = {
+    deathSaveSuccesses: Number.parseInt(deathSaveSuccesses, 10) || 0,
+    deathSaveFailures: Number.parseInt(deathSaveFailures, 10) || 0
+  }
+
+  const handleDeathSaveToggle = (field, index) => {
+    const currentValue = deathSaveValues[field]
+    const nextValue = currentValue === index + 1 ? index : index + 1
+    onDeathSaveChange?.(field, `${nextValue}`)
+  }
+
+  const isDead = deathSaveValues.deathSaveFailures >= 3
+
   return (
     <section className="saving-throws">
       <div className="section-header">
@@ -47,6 +73,30 @@ export default function SavingThrows({ skillsData, modifiers, proficiencyBonus, 
         {SKILL_DEFINITIONS.map(renderRow)}
         <hr className="skill-divider" />
       </ul>
+      <div className="death-saves-card">
+        {DEATH_SAVE_LABELS.map(({ field, label }) => (
+          <div className="death-saves-row" key={field}>
+            <span className="death-saves-label">{label}</span>
+            <div className="death-saves-dots" role="group" aria-label={label}>
+              {[0, 1, 2].map((index) => {
+                const isFilled = index < deathSaveValues[field]
+                return (
+                  <button
+                    key={`${field}-${index}`}
+                    type="button"
+                    className={`death-save-dot${isFilled ? ' death-save-dot--active' : ''}`}
+                    onClick={() => handleDeathSaveToggle(field, index)}
+                    aria-pressed={isFilled}
+                    aria-label={`${label} ${index + 1}`}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        ))}
+        <div className="death-saves-title">TS CONTRO MORTE</div>
+      </div>
+      {isDead && <div className="death-saves-banner">YOU DIED</div>}
     </section>
   )
 }
