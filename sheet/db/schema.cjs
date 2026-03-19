@@ -34,16 +34,24 @@ const SCHEMA_SQL = `
     temporary_hit_points TEXT,
     death_save_successes TEXT,
     death_save_failures TEXT,
+    honor_score TEXT,
     honor TEXT,
+    sanity_score TEXT,
     sanity TEXT,
     occult TEXT,
+    occult_bonus TEXT,
     passive TEXT,
     prof_bonus TEXT,
     hero_points TEXT
   );
   CREATE TABLE IF NOT EXISTS skills (
     id TEXT PRIMARY KEY,
-    proficient INTEGER NOT NULL DEFAULT 0
+    proficient INTEGER NOT NULL DEFAULT 0,
+    bonus TEXT
+  );
+  CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY,
+    content TEXT
   );
   CREATE TABLE IF NOT EXISTS inventory_proficiencies (
     id INTEGER PRIMARY KEY,
@@ -107,6 +115,17 @@ const applyMigrations = (database) => {
   ensureColumn(database, 'header', 'profile_image', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_successes', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_failures', 'TEXT');
+  ensureColumn(database, 'combat', 'honor_score', 'TEXT');
+  ensureColumn(database, 'combat', 'sanity_score', 'TEXT');
+  ensureColumn(database, 'combat', 'occult_bonus', 'TEXT');
+  ensureColumn(database, 'skills', 'bonus', 'TEXT');
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY,
+      content TEXT
+    );
+  `);
+  ensureColumn(database, 'notes', 'content', 'TEXT');
   ensureColumn(database, 'inventory_proficiencies', 'name', 'TEXT');
   ensureColumn(database, 'inventory_proficiencies', 'description', 'TEXT');
   ensureColumn(database, 'inventory_items', 'name', 'TEXT');
@@ -158,6 +177,7 @@ const seedFromState = (database, state) => {
       DELETE FROM stats;
       DELETE FROM combat;
       DELETE FROM skills;
+      DELETE FROM notes;
       DELETE FROM inventory_proficiencies;
       DELETE FROM inventory_items;
       DELETE FROM inventory_equipment;
@@ -197,9 +217,11 @@ const seedFromState = (database, state) => {
     database.prepare(`
       INSERT INTO combat (
         id, ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
-        death_save_successes, death_save_failures, honor, sanity, occult, passive, prof_bonus, hero_points
+        death_save_successes, death_save_failures,
+        honor_score, honor, sanity_score, sanity,
+        occult, occult_bonus, passive, prof_bonus, hero_points
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       state.combat.ac,
       state.combat.speed,
@@ -208,18 +230,33 @@ const seedFromState = (database, state) => {
       state.combat.temporaryHitPoints,
       state.combat.deathSaveSuccesses,
       state.combat.deathSaveFailures,
+      state.combat.honorScore,
       state.combat.honor,
+      state.combat.sanityScore,
       state.combat.sanity,
       state.combat.occult,
+      state.combat.occultBonus,
       state.combat.passive,
       state.combat.profBonus,
       state.combat.heroPoints
     );
 
-    const insertSkill = database.prepare('INSERT OR REPLACE INTO skills (id, proficient) VALUES (?, ?)');
-    Object.entries(state.skills || {}).forEach(([id, proficient]) => {
-      insertSkill.run(id, proficient ? 1 : 0);
+    const insertSkill = database.prepare('INSERT OR REPLACE INTO skills (id, proficient, bonus) VALUES (?, ?, ?)');
+    const skillIds = new Set([
+      ...Object.keys(state.skills || {}),
+      ...Object.keys(state.skillBonuses || {})
+    ]);
+    skillIds.forEach((id) => {
+      const proficient = Boolean(state.skills?.[id]);
+      const bonus = typeof state.skillBonuses?.[id] === 'string' ? state.skillBonuses[id].trim() : '';
+      if (!proficient && bonus === '') return;
+      insertSkill.run(id, proficient ? 1 : 0, bonus);
     });
+
+    database.prepare(`
+      INSERT INTO notes (id, content)
+      VALUES (1, ?)
+    `).run(state.notes?.content ?? '');
 
     const insertProficiency = database.prepare(
       'INSERT INTO inventory_proficiencies (id, label, value, name, description) VALUES (?, ?, ?, ?, ?)'

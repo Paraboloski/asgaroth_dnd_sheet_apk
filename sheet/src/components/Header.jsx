@@ -28,10 +28,16 @@ function UploadIcon() {
   )
 }
 
-export default function Header({ headerData, onFieldChange }) {
+export default function Header({
+  headerData,
+  onFieldChange,
+  activeStatuses = [],
+  activeStatusIndicator = null
+}) {
   const fileInputRef = useRef(null)
   const [uploadError, setUploadError] = useState('')
   const profileImage = headerData.profileImage || ''
+  const activeStatusNames = activeStatuses.map((status) => status.name).join(', ')
 
   const openFilePicker = () => {
     setUploadError('')
@@ -103,8 +109,27 @@ export default function Header({ headerData, onFieldChange }) {
           tabIndex={-1}
         />
         <div className="sheet-header-copy">
-          <h1 className="sheet-title">
+          <h1 className="sheet-title sheet-title--with-status">
             <Editable value={headerData.name} defaultValue="Nome Personaggio" onChange={(val) => onFieldChange('header', 'name', val)} />
+            {activeStatusIndicator && (
+              <span
+                key={activeStatusIndicator.id}
+                className="player-status-indicator"
+                role="img"
+                aria-label={
+                  activeStatuses.length > 1
+                    ? `Status visibile: ${activeStatusIndicator.name}. In totale ci sono ${activeStatuses.length} status attivi.`
+                    : `Status attivo: ${activeStatusIndicator.name}.`
+                }
+                title={
+                  activeStatuses.length > 1
+                    ? `Status attivi: ${activeStatusNames}`
+                    : `Status attivo: ${activeStatusIndicator.name}`
+                }
+              >
+                <span className="player-status-indicator__emoji" aria-hidden="true">{activeStatusIndicator.emoji}</span>
+              </span>
+            )}
           </h1>
           <div className="sheet-subtitle">
             <Editable value={headerData.class1} defaultValue="Classe 1" onChange={(val) => onFieldChange('header', 'class1', val)} /> |{' '}
@@ -126,7 +151,7 @@ export default function Header({ headerData, onFieldChange }) {
           <Editable
             value={headerData.level}
             defaultValue="1"
-            sanitize={sanitizeUnsignedNumber}
+            sanitize={(value) => sanitizeUnsignedNumber(value, 20)}
             inputMode="numeric"
             updateOnInput={false}
             onChange={(val) => onFieldChange('header', 'level', val)}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Navbar({ onSave, onExport, onImport, onReportBug }) {
+export default function Navbar({ onSave, onExport, onImport, onOpenNotes, onReportBug }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleExportClick = () => {
@@ -18,6 +18,7 @@ export default function Navbar({ onSave, onExport, onImport, onReportBug }) {
       <nav className="toolbar no-print">
         <button className="btn btn--save" onClick={onSave}>Salva</button>
         <button className="btn btn--export" onClick={() => setIsModalOpen(true)}>Import / Export</button>
+        <button className="btn btn--notes" onClick={onOpenNotes}>Notes</button>
         <button className="btn btn--print" onClick={() => window.print()}>Stampa PDF</button>
         <button className="btn btn--bug" onClick={onReportBug}>Report a bug</button>
       </nav>

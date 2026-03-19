@@ -6,10 +6,12 @@ import SavingThrows from './components/SavingThrows'
 import Combat from './components/Combat'
 import Inventory from './components/Inventory'
 import Actions from './components/Actions'
+import Notes from './components/Notes'
 import {
   createInitialCharacterState,
   calculateModifier,
-  parseSignedNumber,
+  calculateProficiencyBonus,
+  formatProficiencyBonus,
   fetchCharacterState,
   normalizeCharacterState,
   saveCharacterState,
@@ -21,14 +23,32 @@ import {
   updateItemById
 } from './utils'
 
+const STATUS_EMOJIS_BY_ID = {
+  'status-accecato': '🙈',
+  'status-avvelenato': '🤢',
+  'status-affascinato': '💘',
+  'status-atterrato': '⬇️',
+  'status-incosciente': '🧊',
+  'status-incapacitato': '🚫',
+  'status-invisibile': '👻',
+  'status-pietrificato': '🪨',
+  'status-spaventato': '😱',
+  'status-trattenuto': '⛓️'
+}
+
+const CUSTOM_STATUS_EMOJI = '❔'
+const STATUS_EMOJI_ROTATION_MS = 2000
+
 export default function App() {
   const initialStateRef = useRef(createInitialCharacterState())
   const [characterData, setCharacterData] = useState(() => initialStateRef.current)
   const lastSavedRef = useRef(JSON.stringify(initialStateRef.current))
   const importInputRef = useRef(null)
   const [isBugModalOpen, setIsBugModalOpen] = useState(false)
+  const [isNotesOpen, setIsNotesOpen] = useState(false)
   const [bugReporterName, setBugReporterName] = useState('')
   const [bugDescription, setBugDescription] = useState('')
+  const [statusIndicatorId, setStatusIndicatorId] = useState(null)
 
   useEffect(() => {
     let isActive = true
@@ -51,23 +71,58 @@ export default function App() {
   }, [characterData.stats])
 
   const proficiencyBonusValue = useMemo(
-    () => parseSignedNumber(characterData.combat.profBonus),
-    [characterData.combat.profBonus],
+    () => calculateProficiencyBonus(characterData.header.level),
+    [characterData.header.level],
   )
 
   const serializedState = useMemo(() => JSON.stringify(characterData), [characterData])
+  const activeStatuses = useMemo(() => {
+    const statuses = Array.isArray(characterData.actions.statuses) ? characterData.actions.statuses : []
+
+    return statuses
+      .filter((status) => Boolean(status.active))
+      .map((status) => ({
+        id: String(status.id),
+        name: status.name || 'Status',
+        emoji: status.custom ? CUSTOM_STATUS_EMOJI : (STATUS_EMOJIS_BY_ID[String(status.id)] || CUSTOM_STATUS_EMOJI)
+      }))
+  }, [characterData.actions.statuses])
+
+  const activeStatusIndicator = useMemo(() => {
+    if (activeStatuses.length === 0) return null
+
+    return activeStatuses.find((status) => status.id === statusIndicatorId) ?? activeStatuses[0]
+  }, [activeStatuses, statusIndicatorId])
 
   const updateSectionField = (section, key, value) => {
-    setCharacterData((prev) => ({
-      ...prev,
-      [section]: { ...prev[section], [key]: value }
-    }))
+    setCharacterData((prev) => {
+      const nextState = {
+        ...prev,
+        [section]: { ...prev[section], [key]: value }
+      }
+
+      if (section === 'header' && key === 'level') {
+        nextState.combat = {
+          ...nextState.combat,
+          profBonus: formatProficiencyBonus(value)
+        }
+      }
+
+      return nextState
+    })
   }
 
   const toggleSkill = (skillId) => {
     setCharacterData((prev) => ({
       ...prev,
       skills: { ...prev.skills, [skillId]: !prev.skills[skillId] }
+    }))
+  }
+
+  const updateSkillBonus = (skillId, value) => {
+    setCharacterData((prev) => ({
+      ...prev,
+      skillBonuses: { ...prev.skillBonuses, [skillId]: value }
     }))
   }
 
@@ -88,7 +143,7 @@ export default function App() {
 
   const handleExport = () => {
     const fileName = `scheda-${new Date().toISOString().slice(0, 10)}.json`
-    const payload = JSON.stringify(characterData, null, 2)
+    const payload = JSON.stringify(normalizeCharacterState(characterData), null, 2)
     const blob = new Blob([payload], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -106,6 +161,7 @@ export default function App() {
     data.header &&
     data.stats &&
     data.combat &&
+    (data.notes === undefined || (data.notes && typeof data.notes === 'object')) &&
     data.inventory &&
     Array.isArray(data.inventory.proficiencies) &&
     Array.isArray(data.inventory.items) &&
@@ -169,6 +225,31 @@ export default function App() {
     notifyUnsavedChanges(hasUnsavedChanges)
   }, [serializedState])
 
+  useEffect(() => {
+    if (activeStatuses.length === 0) {
+      setStatusIndicatorId(null)
+      return
+    }
+
+    setStatusIndicatorId((currentId) => (
+      activeStatuses.some((status) => status.id === currentId) ? currentId : activeStatuses[0].id
+    ))
+  }, [activeStatuses])
+
+  useEffect(() => {
+    if (activeStatuses.length <= 1) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setStatusIndicatorId((currentId) => {
+        const currentIndex = activeStatuses.findIndex((status) => status.id === currentId)
+        const safeIndex = currentIndex === -1 ? 0 : currentIndex
+        return activeStatuses[(safeIndex + 1) % activeStatuses.length].id
+      })
+    }, STATUS_EMOJI_ROTATION_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [activeStatuses])
+
   const addInventoryItem = (listName) => {
     const newItem = createInventoryItem(listName)
     setCharacterData((prev) => ({
@@ -225,6 +306,10 @@ export default function App() {
   }
 
   const updateActionEntry = (listName, id, field, newValue) => {
+    if (listName === 'statuses' && field === 'active' && newValue) {
+      setStatusIndicatorId(String(id))
+    }
+
     setCharacterData((prev) => ({
       ...prev,
       actions: {
@@ -250,6 +335,7 @@ export default function App() {
         onSave={handleSave}
         onExport={handleExport}
         onImport={handleImport}
+        onOpenNotes={() => setIsNotesOpen(true)}
         onReportBug={() => setIsBugModalOpen(true)}
       />
       {isBugModalOpen && (
@@ -292,16 +378,29 @@ export default function App() {
           </div>
         </div>
       )}
+      <Notes
+        isOpen={isNotesOpen}
+        notesData={characterData.notes}
+        onClose={() => setIsNotesOpen(false)}
+        onChange={(value) => updateSectionField('notes', 'content', value)}
+      />
       <main className="sheet" id="dynamic-sheet-content">
-        <Header headerData={characterData.header} onFieldChange={updateSectionField} />
+        <Header
+          headerData={characterData.header}
+          onFieldChange={updateSectionField}
+          activeStatuses={activeStatuses}
+          activeStatusIndicator={activeStatusIndicator}
+        />
         <div className="sheet-grid">
           <section className="sheet-column">
             <Stats stats={characterData.stats} modifiers={statModifiers} onFieldChange={updateSectionField} />
             <SavingThrows
               skillsData={characterData.skills}
+              skillBonuses={characterData.skillBonuses}
               modifiers={statModifiers}
               proficiencyBonus={proficiencyBonusValue}
               onToggleSkill={toggleSkill}
+              onSkillBonusChange={updateSkillBonus}
               deathSaveSuccesses={characterData.combat.deathSaveSuccesses}
               deathSaveFailures={characterData.combat.deathSaveFailures}
               onDeathSaveChange={(field, value) => updateSectionField('combat', field, value)}
@@ -317,6 +416,8 @@ export default function App() {
             <Combat
               combatData={characterData.combat}
               initiativeModifier={statModifiers.dex}
+              wisdomModifier={statModifiers.wis}
+              proficiencyBonus={proficiencyBonusValue}
               onFieldChange={updateSectionField}
             />
             <Actions

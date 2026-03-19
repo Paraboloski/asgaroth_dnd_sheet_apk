@@ -1,12 +1,53 @@
 import Editable from './Editable'
 import {
+  calculateOccultPerception,
   clampCurrentHitPoints,
   formatSignedNumber,
+  parseSignedNumber,
   sanitizeSignedNumber,
   sanitizeUnsignedNumber
 } from '../utils.js'
 
-export default function Combat({ combatData, initiativeModifier, onFieldChange }) {
+export default function Combat({ combatData, initiativeModifier, wisdomModifier, proficiencyBonus, onFieldChange }) {
+  const occultClickBonus = parseSignedNumber(combatData.occultBonus ?? '+0')
+  const occultTotal = calculateOccultPerception(
+    wisdomModifier,
+    parseSignedNumber(combatData.sanity),
+    proficiencyBonus,
+    occultClickBonus
+  )
+
+  const renderDualCombatStat = ({ label, scoreField, modifierField }) => (
+    <div className="combat-card combat-card--dual-stat" key={modifierField}>
+      <div className="combat-label combat-label--stacked">{label}</div>
+      <Editable
+        className="combat-value combat-value--dual"
+        tagName="div"
+        value={combatData[modifierField]}
+        defaultValue="+0"
+        sanitize={sanitizeSignedNumber}
+        inputMode="numeric"
+        updateOnInput={false}
+        onChange={(val) => onFieldChange('combat', modifierField, val)}
+      />
+      <Editable
+        className="combat-subvalue"
+        tagName="div"
+        value={combatData[scoreField]}
+        defaultValue="10"
+        sanitize={sanitizeUnsignedNumber}
+        inputMode="numeric"
+        updateOnInput={false}
+        onChange={(val) => onFieldChange('combat', scoreField, val)}
+      />
+    </div>
+  )
+
+  const stepOccultBonus = (delta) => {
+    const nextValue = Math.min(999, Math.max(-999, occultClickBonus + delta))
+    onFieldChange('combat', 'occultBonus', formatSignedNumber(nextValue))
+  }
+
   return (
     <section className="combat-section">
       <div className="combat-grid">
@@ -32,10 +73,13 @@ export default function Combat({ combatData, initiativeModifier, onFieldChange }
             className="combat-value"
             tagName="div"
             value={combatData.speed}
-            defaultValue="9m"
+            defaultValue="9"
+            sanitize={sanitizeUnsignedNumber}
+            inputMode="numeric"
+            updateOnInput={false}
             onChange={(val) => onFieldChange('combat', 'speed', val)}
           />
-          <div className="combat-label">Velocità</div>
+          <div className="combat-label">Velocità(m)</div>
         </div>
         <div className="combat-card combat-card--highlight hp-card">
           <div className="hp-row">
@@ -87,44 +131,30 @@ export default function Combat({ combatData, initiativeModifier, onFieldChange }
       </div>
 
       <div className="combat-grid">
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.honor}
-            defaultValue="+0"
-            sanitize={sanitizeSignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'honor', val)}
-          />
-          <div className="combat-label">Onore</div>
-        </div>
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.sanity}
-            defaultValue="+0"
-            sanitize={sanitizeSignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'sanity', val)}
-          />
-          <div className="combat-label">Sanità Mentale</div>
-        </div>
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.occult}
-            defaultValue="+0"
-            sanitize={sanitizeSignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'occult', val)}
-          />
+        {renderDualCombatStat({ label: 'Onore', scoreField: 'honorScore', modifierField: 'honor' })}
+        {renderDualCombatStat({ label: 'Sanità Mentale', scoreField: 'sanityScore', modifierField: 'sanity' })}
+        <div className="combat-card combat-card--occult">
+          <div className="combat-value">{formatSignedNumber(occultTotal)}</div>
           <div className="combat-label">Percezione occulta</div>
+          <div className="combat-step-controls">
+            {/*<button
+              type="button"
+              className="table-step-btn no-print"
+              onClick={() => stepOccultBonus(-1)}
+              aria-label="Diminuisci bonus Percezione occulta"
+            >
+              -
+            </button>*/}
+            {/*<span className="combat-step-value" aria-live="polite">{formatSignedNumber(occultClickBonus)}</span>*/}
+            <button
+              type="button"
+              className="table-step-btn no-print"
+              onClick={() => stepOccultBonus(1)}
+              aria-label="Aumenta bonus Percezione occulta"
+            >
+              +
+            </button>
+          </div>
         </div>
         <div className="combat-card">
           <Editable
@@ -143,16 +173,7 @@ export default function Combat({ combatData, initiativeModifier, onFieldChange }
 
       <div className="combat-grid">
         <div className="combat-card combat-card--highlight">
-          <Editable
-            className="combat-value combat-value--highlight"
-            tagName="div"
-            value={combatData.profBonus}
-            defaultValue="+0"
-            sanitize={sanitizeSignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'profBonus', val)}
-          />
+          <div className="combat-value combat-value--highlight">{formatSignedNumber(proficiencyBonus)}</div>
           <div className="combat-label combat-label--highlight">Bonus Competenza</div>
         </div>
         <div className="combat-card">

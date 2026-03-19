@@ -1,5 +1,6 @@
 sheet/node_modules/
 sheet/release/
 sheet/dist/
-*.sh
-*.bat
+/*.sh
+/*.bat
+/.VsCodeCounter

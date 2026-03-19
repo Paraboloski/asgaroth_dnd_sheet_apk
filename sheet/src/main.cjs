@@ -98,16 +98,23 @@ const readInitialStateFromDb = () => {
   `).get();
   const combatRow = database.prepare(`
     SELECT ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
-           death_save_successes, death_save_failures, honor, sanity, occult, passive, prof_bonus, hero_points
+           death_save_successes, death_save_failures,
+           honor_score, honor, sanity_score, sanity,
+           occult, occult_bonus, passive, prof_bonus, hero_points
     FROM combat LIMIT 1
   `).get();
+  const notesRow = database.prepare('SELECT content FROM notes LIMIT 1').get();
 
   if (!headerRow || !statsRow || !combatRow) return null;
 
-  const skillsRows = database.prepare('SELECT id, proficient FROM skills').all();
+  const skillsRows = database.prepare('SELECT id, proficient, bonus FROM skills').all();
   const skills = {};
+  const skillBonuses = {};
   skillsRows.forEach((row) => {
     skills[row.id] = Boolean(row.proficient);
+    if (typeof row.bonus === 'string' && row.bonus.trim() !== '') {
+      skillBonuses[row.id] = row.bonus;
+    }
   });
 
   const proficiencies = database.prepare(
@@ -165,14 +172,21 @@ const readInitialStateFromDb = () => {
       temporaryHitPoints: combatRow.temporary_hit_points,
       deathSaveSuccesses: combatRow.death_save_successes,
       deathSaveFailures: combatRow.death_save_failures,
+      honorScore: combatRow.honor_score,
       honor: combatRow.honor,
+      sanityScore: combatRow.sanity_score,
       sanity: combatRow.sanity,
       occult: combatRow.occult,
+      occultBonus: combatRow.occult_bonus,
       passive: combatRow.passive,
       profBonus: combatRow.prof_bonus,
       heroPoints: combatRow.hero_points
     },
     skills,
+    skillBonuses,
+    notes: {
+      content: notesRow?.content ?? ''
+    },
     inventory: {
       proficiencies,
       items,

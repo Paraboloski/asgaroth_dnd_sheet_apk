@@ -1,6 +1,9 @@
+import { useMemo, useState } from 'react'
 import { formatSignedNumber, sanitizeSignedNumber, sanitizeUnsignedNumber } from '../utils.js'
 
 export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUpdateItem }) {
+  const [itemSearch, setItemSearch] = useState('')
+
   const stepUnsignedValue = (listName, id, field, currentValue, delta) => {
     const parsedValue = Number.parseInt(sanitizeUnsignedNumber(currentValue ?? '') || '0', 10)
     const nextValue = Math.min(999, Math.max(0, parsedValue + delta))
@@ -17,6 +20,19 @@ export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUp
     const nextValue = Math.min(999, Math.max(-999, parsedValue + delta))
     onUpdateItem(listName, id, field, formatSignedNumber(nextValue))
   }
+
+  const normalizeSearchText = (value) => value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+
+  const filteredItems = useMemo(() => {
+    const searchValue = normalizeSearchText(itemSearch)
+    if (!searchValue) return inventoryData.items
+
+    return inventoryData.items.filter((item) => normalizeSearchText(item.name || '').includes(searchValue))
+  }, [inventoryData.items, itemSearch])
 
   return (
     <section className="inventory-section">
@@ -79,6 +95,19 @@ export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUp
           +
         </button>
       </div>
+      <div className="inventory-search no-print">
+        <input
+          type="search"
+          className="table-input inventory-search__input"
+          value={itemSearch}
+          placeholder="Cerca..."
+          onChange={(event) => setItemSearch(event.target.value)}
+          aria-label="Cerca oggetto nell'inventario"
+        />
+        <span className="inventory-search__count" aria-live="polite">
+          {filteredItems.length} / {inventoryData.items.length}
+        </span>
+      </div>
       <table className="action-table inventory-table inventory-table--items">
         <thead>
           <tr>
@@ -88,7 +117,7 @@ export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUp
           </tr>
         </thead>
         <tbody>
-        {inventoryData.items.map((item) => (
+        {filteredItems.map((item) => (
           <tr key={item.id}>
             <td>
               <input
@@ -133,11 +162,18 @@ export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUp
             </td>
           </tr>
         ))}
+        {filteredItems.length === 0 && (
+          <tr>
+            <td colSpan={3} className="inventory-search__empty">
+              Nessun oggetto trovato con questa ricerca.
+            </td>
+          </tr>
+        )}
         </tbody>
       </table>
 
       <div className="section-header">
-        <div className="section-title">Equipaggiamento</div>
+        <div className="section-title">Armatura</div>
         <button
           className="icon-btn icon-btn--add no-print"
           onClick={() => onAddItem('equipment')}

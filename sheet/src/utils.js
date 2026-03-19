@@ -108,6 +108,18 @@ const normalizeInventoryEntries = (entries, listName) => {
   })
 }
 
+const normalizeSkillBonuses = (bonuses) => {
+  if (!bonuses || typeof bonuses !== 'object') return {}
+
+  return Object.fromEntries(
+    Object.entries(bonuses).flatMap(([id, value]) => {
+      if (typeof id !== 'string' || id.trim() === '') return []
+      const sanitizedValue = sanitizeSignedNumber(typeof value === 'string' ? value : `${value ?? ''}`)
+      return sanitizedValue ? [[id, sanitizedValue]] : []
+    })
+  )
+}
+
 export const normalizeCharacterState = (state) => {
   const fallback = {
     ...clone(DEFAULT_STATE),
@@ -134,6 +146,11 @@ export const normalizeCharacterState = (state) => {
       ...(state.combat && typeof state.combat === 'object' ? state.combat : {})
     },
     skills: state.skills && typeof state.skills === 'object' ? { ...state.skills } : fallback.skills,
+    skillBonuses: normalizeSkillBonuses(state.skillBonuses),
+    notes: {
+      ...fallback.notes,
+      ...(state.notes && typeof state.notes === 'object' ? state.notes : {})
+    },
     inventory: {
       ...fallback.inventory,
       ...(state.inventory && typeof state.inventory === 'object' ? state.inventory : {}),
@@ -161,8 +178,43 @@ export const normalizeCharacterState = (state) => {
     normalized.header.profileImage = fallback.header.profileImage
   }
 
+  normalized.header.level = sanitizeUnsignedNumber(
+    typeof normalized.header.level === 'string' ? normalized.header.level : `${normalized.header.level ?? ''}`,
+    20
+  ) || fallback.header.level
+
+  if (typeof normalized.notes.content !== 'string') {
+    normalized.notes.content = fallback.notes.content
+  }
+
+  normalized.combat.honorScore = sanitizeUnsignedNumber(
+    typeof normalized.combat.honorScore === 'string' ? normalized.combat.honorScore : `${normalized.combat.honorScore ?? ''}`
+  ) || fallback.combat.honorScore
+  normalized.combat.honor = sanitizeSignedNumber(
+    typeof normalized.combat.honor === 'string' ? normalized.combat.honor : `${normalized.combat.honor ?? ''}`
+  ) || fallback.combat.honor
+  normalized.combat.sanityScore = sanitizeUnsignedNumber(
+    typeof normalized.combat.sanityScore === 'string' ? normalized.combat.sanityScore : `${normalized.combat.sanityScore ?? ''}`
+  ) || fallback.combat.sanityScore
+  normalized.combat.sanity = sanitizeSignedNumber(
+    typeof normalized.combat.sanity === 'string' ? normalized.combat.sanity : `${normalized.combat.sanity ?? ''}`
+  ) || fallback.combat.sanity
+  normalized.combat.speed = sanitizeUnsignedNumber(
+    typeof normalized.combat.speed === 'string' ? normalized.combat.speed : `${normalized.combat.speed ?? ''}`
+  ) || fallback.combat.speed
+  normalized.combat.occultBonus = sanitizeSignedNumber(
+    typeof state.combat?.occultBonus === 'string' ? state.combat.occultBonus : `${state.combat?.occultBonus ?? ''}`
+  ) || fallback.combat.occultBonus
+
   normalized.combat.deathSaveSuccesses = sanitizeDeathSaveCount(normalized.combat.deathSaveSuccesses)
   normalized.combat.deathSaveFailures = sanitizeDeathSaveCount(normalized.combat.deathSaveFailures)
+  normalized.combat.profBonus = formatProficiencyBonus(normalized.header.level)
+  normalized.combat.occult = formatOccultPerception(
+    calculateModifier(normalized.stats.wis),
+    parseSignedNumber(normalized.combat.sanity),
+    calculateProficiencyBonus(normalized.header.level),
+    parseSignedNumber(normalized.combat.occultBonus)
+  )
 
   return normalized
 }
@@ -199,6 +251,36 @@ export const notifyUnsavedChanges = (hasUnsavedChanges) => {
 }
 
 export const formatSignedNumber = (value) => (value >= 0 ? `+${value}` : value.toString())
+
+export const calculateProficiencyBonus = (level) => {
+  const parsedLevel = Number.parseInt(level, 10)
+  const normalizedLevel = Number.isFinite(parsedLevel)
+    ? Math.min(Math.max(parsedLevel, 1), 20)
+    : 1
+
+  return Math.floor((normalizedLevel - 1) / 4) + 2
+}
+
+export const formatProficiencyBonus = (level) => formatSignedNumber(calculateProficiencyBonus(level))
+
+export const calculateOccultPerception = (
+  wisdomModifier,
+  sanityModifier,
+  proficiencyBonus,
+  clickBonus = 0
+) => wisdomModifier - sanityModifier + proficiencyBonus + clickBonus
+
+export const formatOccultPerception = (
+  wisdomModifier,
+  sanityModifier,
+  proficiencyBonus,
+  clickBonus = 0
+) => formatSignedNumber(calculateOccultPerception(
+  wisdomModifier,
+  sanityModifier,
+  proficiencyBonus,
+  clickBonus
+))
 
 export const calculateModifier = (score) => {
   const parsedScore = parseInt(score, 10)
@@ -275,11 +357,8 @@ export const createActionEntry = (listName) => {
     newRow.bonus = '+0'
     newRow.damage = '1d?'
     newRow.notes = '-'
-  } else if (listName === 'features') {
+  } else {
     newRow.name = 'Nuovo Elemento'
-    newRow.effect = 'Descrizione.'
-  } else if (listName === 'traits') {
-    newRow.name = 'Nuovo Tratto'
     newRow.description = 'Descrizione.'
   }
 

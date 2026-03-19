@@ -1,4 +1,6 @@
-import { formatSignedNumber } from '../utils.js'
+import { useEffect, useRef } from 'react'
+import Editable from './Editable'
+import { formatSignedNumber, parseSignedNumber, sanitizeSignedNumber } from '../utils.js'
 
 const SAVE_DEFINITIONS = [
   { id: 'ts_str', label: 'TS Forza:', stat: 'str' }, { id: 'ts_dex', label: 'TS Destrezza:', stat: 'dex' },
@@ -23,18 +25,41 @@ const DEATH_SAVE_LABELS = [
   { field: 'deathSaveFailures', label: 'FALLIMENTI' }
 ]
 
+const DEATH_SCREEN_AUDIO_PATH = `${import.meta.env.BASE_URL}dark_souls_death_screen_sound.mp3`
+const DEATH_SAVE_MAX = 3
+
 export default function SavingThrows({
   skillsData,
+  skillBonuses = {},
   modifiers,
   proficiencyBonus,
   onToggleSkill,
+  onSkillBonusChange,
   deathSaveSuccesses = '0',
   deathSaveFailures = '0',
   onDeathSaveChange,
 }) {
-  const renderRow = ({ id, label, stat }) => {
+  const deathAudioRef = useRef(null)
+  const wasDeadRef = useRef(false)
+
+  useEffect(() => {
+    if (typeof Audio !== 'function') return undefined
+
+    const audio = new Audio(DEATH_SCREEN_AUDIO_PATH)
+    audio.preload = 'auto'
+    deathAudioRef.current = audio
+
+    return () => {
+      audio.pause()
+      audio.currentTime = 0
+      deathAudioRef.current = null
+    }
+  }, [])
+
+  const renderRow = ({ id, label, stat }, { allowManualBonus = false } = {}) => {
     const isProficient = Boolean(skillsData[id])
-    const total = modifiers[stat] + (isProficient ? proficiencyBonus : 0)
+    const manualBonus = allowManualBonus ? parseSignedNumber(skillBonuses[id] ?? '+0') : 0
+    const total = modifiers[stat] + (isProficient ? proficiencyBonus : 0) + manualBonus
 
     return (
       <li className="skill-row" key={id}>
@@ -44,7 +69,24 @@ export default function SavingThrows({
           checked={isProficient}
           onChange={() => onToggleSkill(id)}
         />
-        <strong>{label}</strong> <span className="calc-val">{formatSignedNumber(total)}</span>
+        <strong className="skill-label">{label}</strong>
+        <div className="skill-row__values">
+          <span className="calc-val">{formatSignedNumber(total)}</span>
+          {allowManualBonus && (
+            <div className="skill-manual-bonus-wrap">
+              <span className="skill-manual-bonus-label">Bonus</span>
+              <Editable
+                className="skill-manual-bonus"
+                value={skillBonuses[id] ?? '+0'}
+                defaultValue="+0"
+                sanitize={sanitizeSignedNumber}
+                inputMode="numeric"
+                updateOnInput={false}
+                onChange={(value) => onSkillBonusChange?.(id, value)}
+              />
+            </div>
+          )}
+        </div>
       </li>
     )
   }
@@ -54,13 +96,73 @@ export default function SavingThrows({
     deathSaveFailures: Number.parseInt(deathSaveFailures, 10) || 0
   }
 
+  const applyDeathSaveValues = (nextValues, dominantField = null) => {
+    const normalizedValues = { ...nextValues }
+
+    const hasMaxSuccesses = normalizedValues.deathSaveSuccesses >= DEATH_SAVE_MAX
+    const hasMaxFailures = normalizedValues.deathSaveFailures >= DEATH_SAVE_MAX
+
+    if (hasMaxSuccesses && hasMaxFailures) {
+      if (dominantField === 'deathSaveSuccesses') {
+        normalizedValues.deathSaveFailures = 0
+      } else if (dominantField === 'deathSaveFailures') {
+        normalizedValues.deathSaveSuccesses = 0
+      } else {
+        normalizedValues.deathSaveSuccesses = 0
+        normalizedValues.deathSaveFailures = 0
+      }
+    } else if (hasMaxSuccesses) {
+      normalizedValues.deathSaveFailures = 0
+    } else if (hasMaxFailures) {
+      normalizedValues.deathSaveSuccesses = 0
+    }
+
+    Object.entries(normalizedValues).forEach(([field, value]) => {
+      if (deathSaveValues[field] !== value) {
+        onDeathSaveChange?.(field, `${value}`)
+      }
+    })
+  }
+
   const handleDeathSaveToggle = (field, index) => {
     const currentValue = deathSaveValues[field]
     const nextValue = currentValue === index + 1 ? index : index + 1
-    onDeathSaveChange?.(field, `${nextValue}`)
+    applyDeathSaveValues({
+      ...deathSaveValues,
+      [field]: nextValue
+    }, field)
   }
 
-  const isDead = deathSaveValues.deathSaveFailures >= 3
+  const handleExitDeathState = () => {
+    applyDeathSaveValues({
+      deathSaveSuccesses: 0,
+      deathSaveFailures: 0
+    })
+  }
+
+  const isDead = deathSaveValues.deathSaveFailures >= DEATH_SAVE_MAX
+
+  useEffect(() => {
+    const audio = deathAudioRef.current
+
+    if (!audio) {
+      wasDeadRef.current = isDead
+      return
+    }
+
+    if (isDead && !wasDeadRef.current) {
+      audio.pause()
+      audio.currentTime = 0
+      void audio.play().catch(() => {})
+    }
+
+    if (!isDead && wasDeadRef.current) {
+      audio.pause()
+      audio.currentTime = 0
+    }
+
+    wasDeadRef.current = isDead
+  }, [isDead])
 
   return (
     <section className="saving-throws">
@@ -68,9 +170,9 @@ export default function SavingThrows({
         <div className="section-title">Tiri salvezza</div>
       </div>
       <ul className="skill-list">
-        {SAVE_DEFINITIONS.map(renderRow)}
+        {SAVE_DEFINITIONS.map((definition) => renderRow(definition))}
         <hr className="skill-divider" />
-        {SKILL_DEFINITIONS.map(renderRow)}
+        {SKILL_DEFINITIONS.map((definition) => renderRow(definition, { allowManualBonus: true }))}
         <hr className="skill-divider" />
       </ul>
       <div className="death-saves-card">
@@ -94,9 +196,19 @@ export default function SavingThrows({
             </div>
           </div>
         ))}
-        <div className="death-saves-title">TS CONTRO MORTE</div>
+        <div className="death-saves-title">TS vs MORTE</div>
       </div>
-      {isDead && <div className="death-saves-banner">YOU DIED</div>}
+      {isDead && (
+        <button
+          type="button"
+          className="death-screen-overlay"
+          onClick={handleExitDeathState}
+          aria-label="Esci dallo stato di morte"
+          title="Clicca per uscire dallo stato di morte"
+        >
+          <div className="death-saves-banner">YOU DIED</div>
+        </button>
+      )}
     </section>
   )
 }

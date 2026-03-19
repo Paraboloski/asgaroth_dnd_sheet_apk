@@ -97,20 +97,27 @@ export const DEFAULT_STATE = {
   },
   combat: {
     ac: '10',
-    speed: '9m',
+    speed: '9',
     maxHitPoints: '10',
     currentHitPoints: '10',
     temporaryHitPoints: '0',
     deathSaveSuccesses: '0',
     deathSaveFailures: '0',
+    honorScore: '10',
     honor: '+0',
+    sanityScore: '10',
     sanity: '+0',
-    occult: '+0',
+    occult: '+2',
+    occultBonus: '+0',
     passive: '10',
-    profBonus: '+0',
+    profBonus: '+2',
     heroPoints: '0'
   },
   skills: {},
+  skillBonuses: {},
+  notes: {
+    content: ''
+  },
   inventory: {
     proficiencies: [],
     items: [],
