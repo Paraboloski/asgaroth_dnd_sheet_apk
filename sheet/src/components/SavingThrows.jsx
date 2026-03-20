@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Editable from './Editable'
-import { formatSignedNumber, parseSignedNumber, sanitizeSignedNumber } from '../utils.js'
+import { calculateSkillTotal, formatSignedNumber, parseSignedNumber, sanitizeSignedNumber } from '../scripts/utils.js'
 
 const SAVE_DEFINITIONS = [
   { id: 'ts_str', label: 'TS Forza:', stat: 'str' }, { id: 'ts_dex', label: 'TS Destrezza:', stat: 'dex' },
@@ -33,6 +33,7 @@ export default function SavingThrows({
   skillBonuses = {},
   modifiers,
   proficiencyBonus,
+  weakeningLevel = 0,
   onToggleSkill,
   onSkillBonusChange,
   deathSaveSuccesses = '0',
@@ -41,6 +42,7 @@ export default function SavingThrows({
 }) {
   const deathAudioRef = useRef(null)
   const wasDeadRef = useRef(false)
+  const [isWeakeningDeathDismissed, setIsWeakeningDeathDismissed] = useState(false)
 
   useEffect(() => {
     if (typeof Audio !== 'function') return undefined
@@ -59,7 +61,13 @@ export default function SavingThrows({
   const renderRow = ({ id, label, stat }, { allowManualBonus = false } = {}) => {
     const isProficient = Boolean(skillsData[id])
     const manualBonus = allowManualBonus ? parseSignedNumber(skillBonuses[id] ?? '+0') : 0
-    const total = modifiers[stat] + (isProficient ? proficiencyBonus : 0) + manualBonus
+    const total = calculateSkillTotal(
+      modifiers[stat],
+      isProficient,
+      proficiencyBonus,
+      manualBonus,
+      weakeningLevel
+    )
 
     return (
       <li className="skill-row" key={id}>
@@ -95,6 +103,7 @@ export default function SavingThrows({
     deathSaveSuccesses: Number.parseInt(deathSaveSuccesses, 10) || 0,
     deathSaveFailures: Number.parseInt(deathSaveFailures, 10) || 0
   }
+  const isDeadFromWeakening = Number.parseInt(weakeningLevel, 10) >= DEATH_SAVE_MAX * 2
 
   const applyDeathSaveValues = (nextValues, dominantField = null) => {
     const normalizedValues = { ...nextValues }
@@ -140,7 +149,13 @@ export default function SavingThrows({
     })
   }
 
-  const isDead = deathSaveValues.deathSaveFailures >= DEATH_SAVE_MAX
+  useEffect(() => {
+    if (!isDeadFromWeakening) {
+      setIsWeakeningDeathDismissed(false)
+    }
+  }, [isDeadFromWeakening, weakeningLevel])
+
+  const isDead = deathSaveValues.deathSaveFailures >= DEATH_SAVE_MAX || (isDeadFromWeakening && !isWeakeningDeathDismissed)
 
   useEffect(() => {
     const audio = deathAudioRef.current
@@ -199,15 +214,27 @@ export default function SavingThrows({
         <div className="death-saves-title">TS vs MORTE</div>
       </div>
       {isDead && (
-        <button
-          type="button"
-          className="death-screen-overlay"
-          onClick={handleExitDeathState}
-          aria-label="Esci dallo stato di morte"
-          title="Clicca per uscire dallo stato di morte"
-        >
-          <div className="death-saves-banner">YOU DIED</div>
-        </button>
+        isDeadFromWeakening ? (
+          <button
+            type="button"
+            className="death-screen-overlay"
+            onClick={() => setIsWeakeningDeathDismissed(true)}
+            aria-label="Chiudi lo stato di morte da indebolimento"
+            title="Clicca per chiudere lo stato di morte"
+          >
+            <div className="death-saves-banner">YOU DIED</div>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="death-screen-overlay"
+            onClick={handleExitDeathState}
+            aria-label="Esci dallo stato di morte"
+            title="Clicca per uscire dallo stato di morte"
+          >
+            <div className="death-saves-banner">YOU DIED</div>
+          </button>
+        )
       )}
     </section>
   )

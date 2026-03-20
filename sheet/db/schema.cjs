@@ -28,6 +28,7 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS combat (
     id INTEGER PRIMARY KEY,
     ac TEXT,
+    armor_bonus TEXT,
     speed TEXT,
     max_hit_points TEXT,
     current_hit_points TEXT,
@@ -42,7 +43,9 @@ const SCHEMA_SQL = `
     occult_bonus TEXT,
     passive TEXT,
     prof_bonus TEXT,
-    hero_points TEXT
+    hero_points TEXT,
+    class_points TEXT,
+    weakening_level TEXT
   );
   CREATE TABLE IF NOT EXISTS skills (
     id TEXT PRIMARY KEY,
@@ -115,9 +118,12 @@ const applyMigrations = (database) => {
   ensureColumn(database, 'header', 'profile_image', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_successes', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_failures', 'TEXT');
+  ensureColumn(database, 'combat', 'armor_bonus', 'TEXT');
   ensureColumn(database, 'combat', 'honor_score', 'TEXT');
   ensureColumn(database, 'combat', 'sanity_score', 'TEXT');
   ensureColumn(database, 'combat', 'occult_bonus', 'TEXT');
+  ensureColumn(database, 'combat', 'class_points', 'TEXT');
+  ensureColumn(database, 'combat', 'weakening_level', 'TEXT');
   ensureColumn(database, 'skills', 'bonus', 'TEXT');
   database.exec(`
     CREATE TABLE IF NOT EXISTS notes (
@@ -216,14 +222,15 @@ const seedFromState = (database, state) => {
 
     database.prepare(`
       INSERT INTO combat (
-        id, ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
+        id, ac, armor_bonus, speed, max_hit_points, current_hit_points, temporary_hit_points,
         death_save_successes, death_save_failures,
         honor_score, honor, sanity_score, sanity,
-        occult, occult_bonus, passive, prof_bonus, hero_points
+        occult, occult_bonus, passive, prof_bonus, hero_points, class_points, weakening_level
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       state.combat.ac,
+      state.combat.armorBonus,
       state.combat.speed,
       state.combat.maxHitPoints,
       state.combat.currentHitPoints,
@@ -238,7 +245,9 @@ const seedFromState = (database, state) => {
       state.combat.occultBonus,
       state.combat.passive,
       state.combat.profBonus,
-      state.combat.heroPoints
+      state.combat.heroPoints,
+      state.combat.classPoints,
+      state.combat.weakeningLevel
     );
 
     const insertSkill = database.prepare('INSERT OR REPLACE INTO skills (id, proficient, bonus) VALUES (?, ?, ?)');
@@ -320,7 +329,7 @@ const seedFromState = (database, state) => {
 };
 
 const resolveDefaultState = async () => {
-  const statePath = path.join(__dirname, '..', 'src', 'init.js');
+  const statePath = path.join(__dirname, '..', 'src', 'scripts', 'init.js');
   const module = await import(pathToFileURL(statePath).href);
   return module.DEFAULT_STATE || module.default;
 };

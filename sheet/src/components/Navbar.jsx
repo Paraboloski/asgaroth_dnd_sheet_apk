@@ -25,7 +25,7 @@ export default function Navbar({ onSave, onExport, onImport, onOpenNotes, onRepo
 
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
             <div className="modal-body" style={{ alignItems: 'center', padding: '10px 0' }}>
               <div style={{ display: 'flex', gap: '15px', width: '100%', justifyContent: 'center' }}>
                 <button className="btn btn--export" onClick={handleExportClick}>Export JSON</button>

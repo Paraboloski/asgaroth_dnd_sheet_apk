@@ -1,0 +1,737 @@
+.mobile-app {
+  --mobile-bg: #f6efe5;
+  --mobile-surface: rgba(255, 252, 247, 0.94);
+  --mobile-surface-strong: #fffdf9;
+  --mobile-border: rgba(98, 70, 41, 0.14);
+  --mobile-text: #241a12;
+  --mobile-muted: #6f5742;
+  --mobile-accent: #b6482d;
+  --mobile-accent-dark: #8d351f;
+  min-height: 100vh;
+  padding: 12px;
+  background:
+    radial-gradient(circle at top, rgba(190, 126, 77, 0.18), transparent 34%),
+    linear-gradient(180deg, #f8f2e8 0%, var(--mobile-bg) 48%, #efe2d0 100%);
+  color: var(--mobile-text);
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+.mobile-app *,
+.mobile-app *::before,
+.mobile-app *::after {
+  box-sizing: border-box;
+}
+
+.mobile-app .no-print {
+  display: initial;
+}
+
+.mobile-app .mobile-topbar {
+  position: sticky;
+  top: 12px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--mobile-border);
+  border-radius: 20px;
+  background: rgba(255, 252, 247, 0.82);
+  box-shadow: 0 18px 36px rgba(60, 38, 18, 0.10);
+  backdrop-filter: blur(10px);
+}
+
+.mobile-app .mobile-topbar__title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mobile-muted);
+}
+
+.mobile-app .mobile-menu-trigger {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--mobile-surface-strong);
+  box-shadow: 0 12px 24px rgba(60, 38, 18, 0.09);
+}
+
+.mobile-app .mobile-menu-trigger__line {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--mobile-text);
+}
+
+.mobile-app .mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(33, 22, 14, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.mobile-app .mobile-menu-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(86vw, 360px);
+  height: 100%;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  background: linear-gradient(180deg, #fffdf9 0%, #f5eadb 100%);
+  border-right: 1px solid var(--mobile-border);
+  box-shadow: 18px 0 38px rgba(26, 16, 9, 0.18);
+}
+
+.mobile-app .mobile-menu-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-app .mobile-menu-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mobile-muted);
+}
+
+.mobile-app .mobile-menu-title {
+  margin: 6px 0 0;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--mobile-text);
+}
+
+.mobile-app .mobile-menu-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-app .btn,
+.mobile-app .icon-btn,
+.mobile-app .table-step-btn {
+  border: 0;
+  border-radius: 16px;
+  background: var(--mobile-surface-strong);
+  color: var(--mobile-text);
+  box-shadow: 0 12px 24px rgba(60, 38, 18, 0.09);
+}
+
+.mobile-app .icon-btn--remove {
+  width: 52px;
+  min-width: 52px;
+  height: 52px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  line-height: 1;
+  border-radius: 18px;
+}
+
+.mobile-app .btn {
+  min-height: 46px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mobile-app .btn--save,
+.mobile-app .btn--export,
+.mobile-app .btn--notes,
+.mobile-app .btn--print,
+.mobile-app .btn--bug,
+.mobile-app .btn--import,
+.mobile-app .btn--reset {
+  background: var(--mobile-surface-strong);
+}
+
+.mobile-app .sheet {
+  display: grid;
+  gap: 18px;
+}
+
+.mobile-app .sheet-header,
+.mobile-app .sheet-column > *,
+.mobile-app .notes-panel,
+.mobile-app .modal {
+  background: var(--mobile-surface);
+  border: 1px solid var(--mobile-border);
+  border-radius: 24px;
+  box-shadow: 0 18px 36px rgba(60, 38, 18, 0.08);
+}
+
+.mobile-app .sheet-header {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.mobile-app .sheet-header-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.mobile-app .sheet-header-copy {
+  min-width: 0;
+}
+
+.mobile-app .sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.mobile-app .sheet-column {
+  display: grid;
+  gap: 18px;
+}
+
+.mobile-app .sheet-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  color: var(--mobile-text);
+}
+
+.mobile-app .sheet-title--with-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mobile-app .sheet-subtitle,
+.mobile-app .sheet-level,
+.mobile-app .sheet-meta,
+.mobile-app .profile-upload-error,
+.mobile-app .player-status-indicator {
+  color: var(--mobile-muted);
+}
+
+.mobile-app .sheet-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.mobile-app .ability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mobile-app .ability-card,
+.mobile-app .dnd-card,
+.mobile-app .death-saves-card {
+  background: var(--mobile-surface-strong);
+  border: 1px solid var(--mobile-border);
+  border-radius: 20px;
+}
+
+.mobile-app .ability-card {
+  padding: 14px;
+  text-align: center;
+}
+
+.mobile-app .ability-name,
+.mobile-app .dnd-label,
+.mobile-app .hp-label,
+.mobile-app .section-title,
+.mobile-app .death-saves-title,
+.mobile-app .death-saves-label,
+.mobile-app .skill-manual-bonus-label,
+.mobile-app .dnd-card-meta {
+  color: var(--mobile-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mobile-app .ability-mod,
+.mobile-app .dnd-value,
+.mobile-app .hp-val,
+.mobile-app .calc-val {
+  color: var(--mobile-text);
+  font-weight: 800;
+}
+
+.mobile-app .ability-mod,
+.mobile-app .dnd-value {
+  font-size: 28px;
+}
+
+.mobile-app .ability-score,
+.mobile-app .dnd-value--sub {
+  font-size: 15px;
+  color: var(--mobile-muted);
+}
+
+.mobile-app .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mobile-app .section-title {
+  font-size: 13px;
+}
+
+.mobile-app .saving-throws,
+.mobile-app .inventory-section,
+.mobile-app .actions-section {
+  padding: 18px;
+}
+
+.mobile-app .skill-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-app .skill-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--mobile-surface-strong);
+  border: 1px solid var(--mobile-border);
+}
+
+.mobile-app .skill-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.mobile-app .skill-row__values {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-app .skill-manual-bonus-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-app .skill-divider {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--mobile-border);
+  margin: 4px 0;
+}
+
+.mobile-app .death-saves-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.mobile-app .death-saves-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-app .death-saves-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-app .death-save-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--mobile-border);
+  background: transparent;
+}
+
+.mobile-app .death-save-dot--active {
+  background: var(--mobile-accent);
+  border-color: var(--mobile-accent-dark);
+}
+
+.mobile-app .dnd-combat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "hp hp"
+    "ac init"
+    "speed speed"
+    "honor sanity"
+    "weakening weakening"
+    "hero classpoints"
+    "prof prof"
+    "occult passive";
+  gap: 12px;
+}
+
+.mobile-app .dnd-card {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 120px;
+}
+
+.mobile-app .dnd-card--highlight,
+.mobile-app .area-weakening.dnd-card--highlight,
+.mobile-app .area-class-points.dnd-card--highlight {
+  border-color: rgba(182, 72, 45, 0.28);
+}
+
+.mobile-app .area-ac { grid-area: ac; }
+.mobile-app .area-init { grid-area: init; }
+.mobile-app .area-speed { grid-area: speed; }
+.mobile-app .area-hp { grid-area: hp; }
+.mobile-app .area-honor { grid-area: honor; }
+.mobile-app .area-sanity { grid-area: sanity; }
+.mobile-app .area-weakening { grid-area: weakening; }
+.mobile-app .area-hero { grid-area: hero; }
+.mobile-app .area-class-points { grid-area: classpoints; }
+.mobile-app .area-prof { grid-area: prof; }
+.mobile-app .area-occult { grid-area: occult; }
+.mobile-app .area-passive { grid-area: passive; }
+
+.mobile-app .dnd-value--ac {
+  font-size: 34px;
+}
+
+.mobile-app .dnd-label {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+  text-align: center;
+  border-top: 1px solid var(--mobile-border);
+}
+
+.mobile-app .dnd-value--highlight,
+.mobile-app .hp-val--huge,
+.mobile-app .hp-label--accent,
+.mobile-app .dnd-label--highlight,
+.mobile-app .combat-impact-note {
+  color: var(--mobile-accent);
+}
+
+.mobile-app .dnd-hp-block {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.mobile-app .hp-section {
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--mobile-surface-strong);
+  border: 1px solid var(--mobile-border);
+  text-align: center;
+}
+
+.mobile-app .hp-val--huge {
+  font-size: 40px;
+}
+
+.mobile-app .combat-impact-note,
+.mobile-app .combat-impact-note--inline {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.mobile-app .inventory-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mobile-app .inventory-search__count,
+.mobile-app .inventory-search__empty {
+  color: var(--mobile-muted);
+  font-size: 13px;
+}
+
+.mobile-app .action-table {
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+  border-spacing: 0;
+}
+
+.mobile-app .action-table thead {
+  display: none;
+}
+
+.mobile-app .action-table tbody {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-app .action-table tr {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: var(--mobile-surface-strong);
+  border: 1px solid var(--mobile-border);
+  border-radius: 18px;
+}
+
+.mobile-app .action-table td,
+.mobile-app .action-table th {
+  padding: 0;
+  border: 0;
+}
+
+.mobile-app .table-input,
+.mobile-app .table-textarea,
+.mobile-app .modal-input,
+.mobile-app .modal-textarea {
+  width: 100%;
+  border: 1px solid var(--mobile-border);
+  border-radius: 14px;
+  background: #fffdf9;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--mobile-text);
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.mobile-app .table-textarea,
+.mobile-app .modal-textarea {
+  resize: vertical;
+}
+
+.mobile-app .editable[contenteditable="true"] {
+  outline: none;
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.mobile-app .editable--input {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.mobile-app .table-number-controls,
+.mobile-app .table-row-controls,
+.mobile-app .action-cell,
+.mobile-app .action-cell--status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-app .prof-check,
+.mobile-app .table-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--mobile-accent);
+}
+
+.mobile-app .modal-backdrop,
+.mobile-app .notes-overlay,
+.mobile-app .death-screen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(33, 22, 14, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.mobile-app .notes-overlay {
+  padding: 0;
+  display: flex;
+  justify-content: flex-start;
+  background: rgba(14, 12, 12, 0.36);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.mobile-app .modal,
+.mobile-app .notes-panel {
+  width: min(100%, 620px);
+  padding: 18px;
+}
+
+.mobile-app .notes-panel {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  border-radius: 0;
+  padding: 28px 18px 20px 34px;
+  border: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 246, 238, 0.98) 100%);
+  box-shadow: 18px 0 36px rgba(0, 0, 0, 0.22);
+  overflow: auto;
+}
+
+.mobile-app .modal-header,
+.mobile-app .notes-panel__header,
+.mobile-app .modal-actions,
+.mobile-app .notes-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-app .modal-body {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.mobile-app .modal-title,
+.mobile-app .notes-panel__title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.mobile-app .notes-panel__title {
+  color: #55201a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mobile-app .modal-header .icon-btn--remove,
+.mobile-app .notes-panel__header .icon-btn--remove,
+.mobile-app .mobile-menu-header .icon-btn--remove {
+  flex-shrink: 0;
+}
+
+.mobile-app .notes-panel__spine {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 100%;
+  background: linear-gradient(180deg, #7f2a22 0%, #5e1914 100%);
+  box-shadow: inset -2px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+.mobile-app .notes-panel__textarea {
+  width: 100%;
+  min-height: calc(100vh - 170px);
+  margin: 14px 0;
+  border: 1px solid #dccfbc;
+  border-radius: 16px;
+  padding: 18px 18px 18px 44px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: #2b2420;
+  background:
+    linear-gradient(90deg, rgba(201, 67, 67, 0.18) 0, rgba(201, 67, 67, 0.18) 2px, transparent 2px, transparent 100%),
+    repeating-linear-gradient(180deg, transparent 0, transparent 33px, rgba(107, 144, 194, 0.22) 33px, rgba(107, 144, 194, 0.22) 34px),
+    linear-gradient(180deg, #fffdf8 0%, #f8f1e5 100%);
+  background-position: 24px 0, 0 0, 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.mobile-app .notes-panel__textarea:focus {
+  outline: none;
+  border-color: rgba(127, 42, 34, 0.42);
+  box-shadow: 0 0 0 3px rgba(127, 42, 34, 0.12);
+}
+
+.mobile-app .notes-panel__footer {
+  color: #7b6b61;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+.mobile-app .death-saves-banner {
+  padding: 22px 26px;
+  border-radius: 22px;
+  background: #1f1510;
+  color: #fff6ef;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 520px) {
+  .mobile-app .sheet-header-main,
+  .mobile-app .inventory-search,
+  .mobile-app .death-saves-row,
+  .mobile-app .modal-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-app .ability-grid,
+  .mobile-app .dnd-combat-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "hp"
+      "ac"
+      "init"
+      "speed"
+      "honor"
+      "sanity"
+      "weakening"
+      "hero"
+      "classpoints"
+      "prof"
+      "occult"
+      "passive";
+  }
+
+  .mobile-app .mobile-menu-drawer {
+    width: min(92vw, 360px);
+  }
+}

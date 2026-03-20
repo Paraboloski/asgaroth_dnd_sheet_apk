@@ -1,5 +1,5 @@
 import Editable from './Editable'
-import { formatSignedNumber, sanitizeUnsignedNumber } from '../utils.js'
+import { formatSignedNumber, sanitizeUnsignedNumber } from '../scripts/utils.js'
 
 const STAT_DEFINITIONS = [
   { key: 'str', label: 'FOR' }, { key: 'dex', label: 'DES' }, { key: 'con', label: 'COS' },

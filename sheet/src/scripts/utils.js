@@ -22,6 +22,11 @@ const sanitizeDeathSaveCount = (value) => {
   return sanitizeUnsignedNumber(normalizedValue, 3) || '0'
 }
 
+const sanitizeWeakeningLevel = (value) => {
+  const normalizedValue = typeof value === 'string' ? value : `${value ?? ''}`
+  return sanitizeUnsignedNumber(normalizedValue, 6) || '0'
+}
+
 const getIpcRenderer = () => {
   if (typeof window === 'undefined') return null
   try {
@@ -190,18 +195,23 @@ export const normalizeCharacterState = (state) => {
   normalized.combat.honorScore = sanitizeUnsignedNumber(
     typeof normalized.combat.honorScore === 'string' ? normalized.combat.honorScore : `${normalized.combat.honorScore ?? ''}`
   ) || fallback.combat.honorScore
-  normalized.combat.honor = sanitizeSignedNumber(
-    typeof normalized.combat.honor === 'string' ? normalized.combat.honor : `${normalized.combat.honor ?? ''}`
-  ) || fallback.combat.honor
   normalized.combat.sanityScore = sanitizeUnsignedNumber(
     typeof normalized.combat.sanityScore === 'string' ? normalized.combat.sanityScore : `${normalized.combat.sanityScore ?? ''}`
   ) || fallback.combat.sanityScore
-  normalized.combat.sanity = sanitizeSignedNumber(
-    typeof normalized.combat.sanity === 'string' ? normalized.combat.sanity : `${normalized.combat.sanity ?? ''}`
-  ) || fallback.combat.sanity
+  normalized.combat.honor = formatSignedNumber(calculateModifier(normalized.combat.honorScore))
+  normalized.combat.sanity = formatSignedNumber(calculateModifier(normalized.combat.sanityScore))
+  normalized.combat.armorBonus = formatSignedNumber(calculateArmorBonusFromEquipment(normalized.inventory.equipment))
+  normalized.combat.ac = `${10 + calculateModifier(normalized.stats.dex) + calculateArmorBonusFromEquipment(normalized.inventory.equipment)}`
   normalized.combat.speed = sanitizeUnsignedNumber(
     typeof normalized.combat.speed === 'string' ? normalized.combat.speed : `${normalized.combat.speed ?? ''}`
   ) || fallback.combat.speed
+  normalized.combat.classPoints = sanitizeUnsignedNumber(
+    typeof normalized.combat.classPoints === 'string' ? normalized.combat.classPoints : `${normalized.combat.classPoints ?? ''}`
+  ) || fallback.combat.classPoints
+  normalized.combat.heroPoints = sanitizeUnsignedNumber(
+    typeof normalized.combat.heroPoints === 'string' ? normalized.combat.heroPoints : `${normalized.combat.heroPoints ?? ''}`
+  ) || fallback.combat.heroPoints
+  normalized.combat.weakeningLevel = sanitizeWeakeningLevel(normalized.combat.weakeningLevel)
   normalized.combat.occultBonus = sanitizeSignedNumber(
     typeof state.combat?.occultBonus === 'string' ? state.combat.occultBonus : `${state.combat?.occultBonus ?? ''}`
   ) || fallback.combat.occultBonus
@@ -209,6 +219,13 @@ export const normalizeCharacterState = (state) => {
   normalized.combat.deathSaveSuccesses = sanitizeDeathSaveCount(normalized.combat.deathSaveSuccesses)
   normalized.combat.deathSaveFailures = sanitizeDeathSaveCount(normalized.combat.deathSaveFailures)
   normalized.combat.profBonus = formatProficiencyBonus(normalized.header.level)
+  normalized.combat.passive = `${calculatePassivePerception(
+    normalized.stats,
+    normalized.skills,
+    normalized.skillBonuses,
+    normalized.header.level,
+    normalized.combat.weakeningLevel
+  )}`
   normalized.combat.occult = formatOccultPerception(
     calculateModifier(normalized.stats.wis),
     parseSignedNumber(normalized.combat.sanity),
@@ -243,6 +260,20 @@ export const saveCharacterState = async (state) => {
   }
 }
 
+export const showSaveSuccessMessage = async () => {
+  const ipcRenderer = getIpcRenderer()
+  if (!ipcRenderer?.invoke) {
+    alert("Scheda salvata con successo! Puoi chiudere l'app.")
+    return
+  }
+
+  try {
+    await ipcRenderer.invoke('show-save-success-message')
+  } catch {
+    alert("Scheda salvata con successo! Puoi chiudere l'app.")
+  }
+}
+
 export const notifyUnsavedChanges = (hasUnsavedChanges) => {
   const ipcRenderer = getIpcRenderer()
   if (ipcRenderer?.send) {
@@ -262,6 +293,46 @@ export const calculateProficiencyBonus = (level) => {
 }
 
 export const formatProficiencyBonus = (level) => formatSignedNumber(calculateProficiencyBonus(level))
+
+export const calculateArmorBonusFromEquipment = (equipment = []) => {
+  if (!Array.isArray(equipment)) return 0
+
+  return equipment.reduce((total, item) => total + parseSignedNumber(item?.bonus ?? '+0'), 0)
+}
+
+export const calculateWeakeningPenalty = (weakeningLevel) => {
+  const parsedLevel = Number.parseInt(weakeningLevel, 10)
+  if (!Number.isFinite(parsedLevel)) return 0
+  return Math.max(0, Math.min(parsedLevel, 6))
+}
+
+export const calculateSkillTotal = (
+  statModifier,
+  isProficient,
+  proficiencyBonus,
+  manualBonus = 0,
+  weakeningLevel = 0
+) => statModifier + (isProficient ? proficiencyBonus : 0) + manualBonus - calculateWeakeningPenalty(weakeningLevel)
+
+export const calculatePassivePerception = (
+  stats,
+  skills,
+  skillBonuses,
+  level,
+  weakeningLevel = 0
+) => {
+  const wisdomModifier = calculateModifier(stats?.wis ?? '10')
+  const proficiencyBonus = calculateProficiencyBonus(level)
+  const manualBonus = parseSignedNumber(skillBonuses?.perception ?? '+0')
+  const skillTotal = calculateSkillTotal(
+    wisdomModifier,
+    Boolean(skills?.perception),
+    proficiencyBonus,
+    manualBonus,
+    weakeningLevel
+  )
+  return skillTotal + 10
+}
 
 export const calculateOccultPerception = (
   wisdomModifier,

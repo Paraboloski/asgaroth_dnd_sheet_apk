@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import Editable from './Editable'
-import { sanitizeUnsignedNumber } from '../utils.js'
+import { sanitizeUnsignedNumber } from '../scripts/utils.js'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PROFILE_IMAGE_SIZE = 2 * 1024 * 1024
@@ -32,7 +32,9 @@ export default function Header({
   headerData,
   onFieldChange,
   activeStatuses = [],
-  activeStatusIndicator = null
+  activeStatusIndicator = null,
+  allowProfileImageUpload = true,
+  showProfileImage = true
 }) {
   const fileInputRef = useRef(null)
   const [uploadError, setUploadError] = useState('')
@@ -40,6 +42,7 @@ export default function Header({
   const activeStatusNames = activeStatuses.map((status) => status.name).join(', ')
 
   const openFilePicker = () => {
+    if (!allowProfileImageUpload) return
     setUploadError('')
     fileInputRef.current?.click()
   }
@@ -83,34 +86,54 @@ export default function Header({
   return (
     <header className="sheet-header">
       <div className="sheet-header-main">
-        <button
-          type="button"
-          className="profile-upload-trigger"
-          onClick={openFilePicker}
-          aria-label={profileImage ? 'Cambia foto profilo' : 'Carica foto profilo'}
-        >
-          {profileImage ? (
-            <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
-          ) : (
-            <span className="profile-image profile-image--placeholder" aria-hidden="true">
-              <UserIcon />
-            </span>
-          )}
-          <span className="profile-upload-overlay" aria-hidden="true">
-            <UploadIcon />
-          </span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-          className="profile-upload-input"
-          onChange={handleProfileImageChange}
-          tabIndex={-1}
-        />
+        {showProfileImage && (allowProfileImageUpload ? (
+          <>
+            <button
+              type="button"
+              className="profile-upload-trigger"
+              onClick={openFilePicker}
+              aria-label={profileImage ? 'Cambia foto profilo' : 'Carica foto profilo'}
+            >
+              {profileImage ? (
+                <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
+              ) : (
+                <span className="profile-image profile-image--placeholder" aria-hidden="true">
+                  <UserIcon />
+                </span>
+              )}
+              <span className="profile-upload-overlay" aria-hidden="true">
+                <UploadIcon />
+              </span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              className="profile-upload-input"
+              onChange={handleProfileImageChange}
+              tabIndex={-1}
+            />
+          </>
+        ) : (
+          <div className="profile-upload-trigger profile-upload-trigger--static" aria-label="Foto profilo">
+            {profileImage ? (
+              <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
+            ) : (
+              <span className="profile-image profile-image--placeholder" aria-hidden="true">
+                <UserIcon />
+              </span>
+            )}
+          </div>
+        ))}
         <div className="sheet-header-copy">
           <h1 className="sheet-title sheet-title--with-status">
-            <Editable value={headerData.name} defaultValue="Nome Personaggio" onChange={(val) => onFieldChange('header', 'name', val)} />
+            <Editable
+              className="sheet-title-input"
+              value={headerData.name}
+              defaultValue="Nome Personaggio"
+              nativeInput
+              onChange={(val) => onFieldChange('header', 'name', val)}
+            />
             {activeStatusIndicator && (
               <span
                 key={activeStatusIndicator.id}
@@ -132,11 +155,11 @@ export default function Header({
             )}
           </h1>
           <div className="sheet-subtitle">
-            <Editable value={headerData.class1} defaultValue="Classe 1" onChange={(val) => onFieldChange('header', 'class1', val)} /> |{' '}
-            <Editable value={headerData.class2} defaultValue="Classe 2" onChange={(val) => onFieldChange('header', 'class2', val)} /> |{' '}
-            <Editable value={headerData.race} defaultValue="Razza" onChange={(val) => onFieldChange('header', 'race', val)} /> |{' '}
-            <Editable value={headerData.background} defaultValue="Background" onChange={(val) => onFieldChange('header', 'background', val)} /> |{' '}
-            <Editable value={headerData.alignment} defaultValue="Allineamento" onChange={(val) => onFieldChange('header', 'alignment', val)} />
+            <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} /> |{' '}
+            <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} /> |{' '}
+            <Editable className="sheet-subtitle-input" value={headerData.race} defaultValue="Razza" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'race', val)} /> |{' '}
+            <Editable className="sheet-subtitle-input" value={headerData.background} defaultValue="Background" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'background', val)} /> |{' '}
+            <Editable className="sheet-subtitle-input" value={headerData.alignment} defaultValue="Allineamento" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'alignment', val)} />
           </div>
           {uploadError && (
             <div className="profile-upload-error" role="alert">
@@ -158,7 +181,7 @@ export default function Header({
           />
         </div>
         <div className="sheet-subtitle">
-          Giocatore: <Editable value={headerData.player} defaultValue="Tuo Nome" onChange={(val) => onFieldChange('header', 'player', val)} />
+          Giocatore: <Editable className="sheet-subtitle-input" value={headerData.player} defaultValue="Tuo Nome" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'player', val)} />
         </div>
       </div>
     </header>

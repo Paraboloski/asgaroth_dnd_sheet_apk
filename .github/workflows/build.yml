@@ -46,7 +46,7 @@ jobs:
       - name: Upload
         shell: bash
         run: |
-          for file in release/*setup*.exe release/*.dmg release/*.AppImage; do
+          for file in release/*Setup*.exe release/*.dmg release/*.AppImage; do
             if [ -f "$file" ]; then
               gh release upload ${{ github.ref_name }} "$file" --repo ${{ github.repository }} --clobber
             fi

@@ -97,6 +97,7 @@ export const DEFAULT_STATE = {
   },
   combat: {
     ac: '10',
+    armorBonus: '+0',
     speed: '9',
     maxHitPoints: '10',
     currentHitPoints: '10',
@@ -111,7 +112,9 @@ export const DEFAULT_STATE = {
     occultBonus: '+0',
     passive: '10',
     profBonus: '+2',
-    heroPoints: '0'
+    heroPoints: '0',
+    classPoints: '0',
+    weakeningLevel: '0'
   },
   skills: {},
   skillBonuses: {},

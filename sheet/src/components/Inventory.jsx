@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { formatSignedNumber, sanitizeSignedNumber, sanitizeUnsignedNumber } from '../utils.js'
+import { formatSignedNumber, sanitizeSignedNumber, sanitizeUnsignedNumber } from '../scripts/utils.js'
 
 export default function Inventory({ inventoryData, onAddItem, onRemoveItem, onUpdateItem }) {
   const [itemSearch, setItemSearch] = useState('')

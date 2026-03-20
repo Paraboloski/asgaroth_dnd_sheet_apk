@@ -1,45 +1,53 @@
 import Editable from './Editable'
 import {
+  calculateModifier,
   calculateOccultPerception,
   clampCurrentHitPoints,
   formatSignedNumber,
   parseSignedNumber,
-  sanitizeSignedNumber,
   sanitizeUnsignedNumber
-} from '../utils.js'
+} from '../scripts/utils.js'
 
-export default function Combat({ combatData, initiativeModifier, wisdomModifier, proficiencyBonus, onFieldChange }) {
-  const occultClickBonus = parseSignedNumber(combatData.occultBonus ?? '+0')
+export default function Combat({
+  combatData,
+  armorBonus = 0,
+  dexterityModifier,
+  initiativeModifier,
+  wisdomModifier,
+  proficiencyBonus,
+  passivePerception,
+  onFieldChange
+}) {
+  const resolvedCombatData = combatData ?? {}
+  const resolvedArmorBonus = Number.isFinite(armorBonus) ? armorBonus : parseSignedNumber(resolvedCombatData.armorBonus ?? '+0')
+  const resolvedDexterityModifier = Number.isFinite(dexterityModifier) ? dexterityModifier : 0
+  const armorClass = 10 + resolvedDexterityModifier + resolvedArmorBonus
+  const occultClickBonus = parseSignedNumber(resolvedCombatData.occultBonus ?? '+0')
+  const weakeningLevel = Number.parseInt(resolvedCombatData.weakeningLevel ?? '0', 10) || 0
+  const sanityModifier = calculateModifier(resolvedCombatData.sanityScore ?? '10')
   const occultTotal = calculateOccultPerception(
     wisdomModifier,
-    parseSignedNumber(combatData.sanity),
+    sanityModifier,
     proficiencyBonus,
     occultClickBonus
   )
 
-  const renderDualCombatStat = ({ label, scoreField, modifierField }) => (
-    <div className="combat-card combat-card--dual-stat" key={modifierField}>
-      <div className="combat-label combat-label--stacked">{label}</div>
+  const renderDerivedCombatStat = ({ label, scoreField, gridArea }) => (
+    <div className={`dnd-card dnd-card--dual ${gridArea}`} key={scoreField}>
+      <div className="dnd-value dnd-value--main">
+        {formatSignedNumber(calculateModifier(resolvedCombatData[scoreField] ?? '10'))}
+      </div>
       <Editable
-        className="combat-value combat-value--dual"
+        className="dnd-value dnd-value--sub"
         tagName="div"
-        value={combatData[modifierField]}
-        defaultValue="+0"
-        sanitize={sanitizeSignedNumber}
-        inputMode="numeric"
-        updateOnInput={false}
-        onChange={(val) => onFieldChange('combat', modifierField, val)}
-      />
-      <Editable
-        className="combat-subvalue"
-        tagName="div"
-        value={combatData[scoreField]}
+        value={resolvedCombatData[scoreField]}
         defaultValue="10"
         sanitize={sanitizeUnsignedNumber}
         inputMode="numeric"
         updateOnInput={false}
         onChange={(val) => onFieldChange('combat', scoreField, val)}
       />
+      <div className="dnd-label">{label}</div>
     </div>
   )
 
@@ -49,147 +57,147 @@ export default function Combat({ combatData, initiativeModifier, wisdomModifier,
   }
 
   return (
-    <section className="combat-section">
-      <div className="combat-grid">
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.ac}
-            defaultValue="10"
-            sanitize={sanitizeUnsignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'ac', val)}
-          />
-          <div className="combat-label">Classe Armatura (CA)</div>
-        </div>
-        <div className="combat-card">
-          <div className="combat-value" id="initiative-val">{formatSignedNumber(initiativeModifier)}</div>
-          <div className="combat-label">Iniziativa</div>
-        </div>
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.speed}
-            defaultValue="9"
-            sanitize={sanitizeUnsignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'speed', val)}
-          />
-          <div className="combat-label">Velocità(m)</div>
-        </div>
-        <div className="combat-card combat-card--highlight hp-card">
-          <div className="hp-row">
-            <div className="combat-label">PF Massimi</div>
-            <Editable
-              className="combat-value combat-value--highlight"
-              tagName="div"
-              value={combatData.maxHitPoints}
-              defaultValue="0"
-              sanitize={sanitizeUnsignedNumber}
-              inputMode="numeric"
-              updateOnInput={false}
-              onChange={(val) => {
-                onFieldChange('combat', 'maxHitPoints', val)
-                const clampedCurrent = clampCurrentHitPoints(combatData.currentHitPoints, val)
-                if (clampedCurrent !== combatData.currentHitPoints) {
-                  onFieldChange('combat', 'currentHitPoints', clampedCurrent)
-                }
-              }}
-            />
-          </div>
-          <div className="hp-row">
-            <div className="combat-label">PF Attuali</div>
-            <Editable
-              className="combat-value combat-value--highlight"
-              tagName="div"
-              value={combatData.currentHitPoints}
-              defaultValue="0"
-              sanitize={(val) => clampCurrentHitPoints(sanitizeUnsignedNumber(val), combatData.maxHitPoints)}
-              inputMode="numeric"
-              updateOnInput={false}
-              onChange={(val) => onFieldChange('combat', 'currentHitPoints', clampCurrentHitPoints(val, combatData.maxHitPoints))}
-            />
-          </div>
-          <div className="hp-row">
-            <div className="combat-label">PF Temporanei</div>
-            <Editable
-              className="combat-value"
-              tagName="div"
-              value={combatData.temporaryHitPoints}
-              defaultValue="0"
-              sanitize={sanitizeUnsignedNumber}
-              inputMode="numeric"
-              updateOnInput={false}
-              onChange={(val) => onFieldChange('combat', 'temporaryHitPoints', val)}
-            />
-          </div>
-        </div>
+    <section className="dnd-combat-grid">
+      <div className="dnd-card dnd-card--dual area-ac">
+        <div className="dnd-value dnd-value--ac dnd-value--main">{armorClass}</div>
+        <div className="dnd-label">Classe Armatura</div>
       </div>
 
-      <div className="combat-grid">
-        {renderDualCombatStat({ label: 'Onore', scoreField: 'honorScore', modifierField: 'honor' })}
-        {renderDualCombatStat({ label: 'Sanità Mentale', scoreField: 'sanityScore', modifierField: 'sanity' })}
-        <div className="combat-card combat-card--occult">
-          <div className="combat-value">{formatSignedNumber(occultTotal)}</div>
-          <div className="combat-label">Percezione occulta</div>
-          <div className="combat-step-controls">
-            {/*<button
-              type="button"
-              className="table-step-btn no-print"
-              onClick={() => stepOccultBonus(-1)}
-              aria-label="Diminuisci bonus Percezione occulta"
-            >
-              -
-            </button>*/}
-            {/*<span className="combat-step-value" aria-live="polite">{formatSignedNumber(occultClickBonus)}</span>*/}
-            <button
-              type="button"
-              className="table-step-btn no-print"
-              onClick={() => stepOccultBonus(1)}
-              aria-label="Aumenta bonus Percezione occulta"
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <div className="combat-card">
-          <Editable
-            className="combat-value"
-            tagName="div"
-            value={combatData.passive}
-            defaultValue="10"
-            sanitize={sanitizeUnsignedNumber}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'passive', val)}
-          />
-          <div className="combat-label">Percezione passiva</div>
-        </div>
+      <div className="dnd-card area-init">
+        <div className="dnd-value" id="initiative-val">{formatSignedNumber(initiativeModifier)}</div>
+        <div className="dnd-label">Iniziativa</div>
       </div>
 
-      <div className="combat-grid">
-        <div className="combat-card combat-card--highlight">
-          <div className="combat-value combat-value--highlight">{formatSignedNumber(proficiencyBonus)}</div>
-          <div className="combat-label combat-label--highlight">Bonus Competenza</div>
-        </div>
-        <div className="combat-card">
+      <div className="dnd-card area-speed">
+        <Editable
+          className="dnd-value"
+          tagName="div"
+          value={resolvedCombatData.speed}
+          defaultValue="9"
+          sanitize={sanitizeUnsignedNumber}
+          inputMode="numeric"
+          updateOnInput={false}
+          onChange={(val) => onFieldChange('combat', 'speed', val)}
+        />
+        <div className="dnd-label">Velocità (m)</div>
+      </div>
+
+      <div className="dnd-hp-block area-hp">
+        <div className="hp-section hp-max">
+          <div className="hp-label">PF Massimi</div>
           <Editable
-            className="combat-value"
+            className="hp-val"
             tagName="div"
-            value={combatData.heroPoints}
+            value={resolvedCombatData.maxHitPoints}
             defaultValue="0"
             sanitize={sanitizeUnsignedNumber}
             inputMode="numeric"
             updateOnInput={false}
-            onChange={(val) => onFieldChange('combat', 'heroPoints', val)}
+              onChange={(val) => {
+                onFieldChange('combat', 'maxHitPoints', val)
+                const clampedCurrent = clampCurrentHitPoints(resolvedCombatData.currentHitPoints, val)
+                if (clampedCurrent !== resolvedCombatData.currentHitPoints) {
+                  onFieldChange('combat', 'currentHitPoints', clampedCurrent)
+                }
+              }}
           />
-          <div className="combat-label">Punti Eroe</div>
+        </div>
+        <div className="hp-section hp-current">
+          <div className="hp-label hp-label--accent">PF Attuali</div>
+          <Editable
+            className="hp-val hp-val--huge"
+            tagName="div"
+            value={resolvedCombatData.currentHitPoints}
+            defaultValue="0"
+            sanitize={(val) => clampCurrentHitPoints(sanitizeUnsignedNumber(val), resolvedCombatData.maxHitPoints)}
+            inputMode="numeric"
+            updateOnInput={false}
+            onChange={(val) => onFieldChange('combat', 'currentHitPoints', clampCurrentHitPoints(val, resolvedCombatData.maxHitPoints))}
+          />
+        </div>
+        <div className="hp-section hp-temp">
+          <div className="hp-label">PF Temporanei</div>
+          <Editable
+            className="hp-val"
+            tagName="div"
+            value={resolvedCombatData.temporaryHitPoints}
+            defaultValue="0"
+            sanitize={sanitizeUnsignedNumber}
+            inputMode="numeric"
+            updateOnInput={false}
+            onChange={(val) => onFieldChange('combat', 'temporaryHitPoints', val)}
+          />
         </div>
       </div>
+
+      {renderDerivedCombatStat({ label: 'Onore', scoreField: 'honorScore', gridArea: 'area-honor' })}
+      {renderDerivedCombatStat({ label: 'Sanità Mentale', scoreField: 'sanityScore', gridArea: 'area-sanity' })}
+
+      <div className={`dnd-card area-weakening${weakeningLevel > 0 ? ' dnd-card--highlight' : ''}`}>
+        <Editable
+          className="dnd-value"
+          tagName="div"
+          value={resolvedCombatData.weakeningLevel}
+          defaultValue="0"
+          sanitize={(value) => sanitizeUnsignedNumber(value, 6)}
+          inputMode="numeric"
+          updateOnInput={false}
+          onChange={(val) => onFieldChange('combat', 'weakeningLevel', val)}
+        />
+        <div className="dnd-label">Livello di indebolimento</div>
+        {weakeningLevel > 0 && (
+          <div className="combat-impact-note">
+            Indebolito: {formatSignedNumber(-weakeningLevel)} a prove, TPC e TS.
+          </div>
+        )}
+      </div>
+
+      <div className="dnd-card area-hero">
+        <Editable
+          className="dnd-value"
+          tagName="div"
+          value={resolvedCombatData.heroPoints}
+          defaultValue="0"
+          sanitize={sanitizeUnsignedNumber}
+          inputMode="numeric"
+          updateOnInput={false}
+          onChange={(val) => onFieldChange('combat', 'heroPoints', val)}
+        />
+        <div className="dnd-label">Punti Eroe</div>
+      </div>
+
+      <div className={`dnd-card area-class-points${(resolvedCombatData.classPoints ?? '0') !== '0' ? ' dnd-card--highlight' : ''}`}>
+        <Editable
+          className="dnd-value"
+          tagName="div"
+          value={resolvedCombatData.classPoints}
+          defaultValue="0"
+          sanitize={sanitizeUnsignedNumber}
+          inputMode="numeric"
+          updateOnInput={false}
+          onChange={(val) => onFieldChange('combat', 'classPoints', val)}
+        />
+        <div className="dnd-label">Punti Classe</div>
+      </div>
+
+      <div className="dnd-card dnd-card--highlight area-prof">
+        <div className="dnd-value dnd-value--highlight">{formatSignedNumber(proficiencyBonus)}</div>
+        <div className="dnd-label dnd-label--highlight">Bonus Competenza</div>
+      </div>
+
+      <div className="dnd-card area-occult">
+        <div className="dnd-value">{formatSignedNumber(occultTotal)}</div>
+        <div className="dnd-label">Percezione Occulta</div>
+        <div className="combat-step-controls no-print" style={{ marginTop: '4px' }}>
+          <button type="button" className="table-step-btn" onClick={() => stepOccultBonus(1)} title="Aumenta bonus">+</button>
+        </div>
+      </div>
+
+      <div className="dnd-card area-passive">
+        <div className="dnd-value">{passivePerception ?? resolvedCombatData.passive ?? '10'}</div>
+        <div className="dnd-label">Percezione Passiva</div>
+      </div>
+
     </section>
   )
 }

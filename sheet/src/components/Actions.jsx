@@ -1,8 +1,11 @@
-export default function Actions({ actionsData, onAddRow, onRemoveRow, onUpdateRow }) {
+import { calculateWeakeningPenalty, formatSignedNumber, parseSignedNumber } from '../scripts/utils.js'
+
+export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onRemoveRow, onUpdateRow }) {
   const statuses = Array.isArray(actionsData.statuses) ? actionsData.statuses : []
   const baseStatuses = statuses.filter((status) => !status.custom)
   const customStatuses = statuses.filter((status) => status.custom)
   const orderedStatuses = [...baseStatuses, ...customStatuses]
+  const weakeningPenalty = calculateWeakeningPenalty(weakeningLevel)
 
   return (
     <section className="actions-section">
@@ -90,7 +93,10 @@ export default function Actions({ actionsData, onAddRow, onRemoveRow, onUpdateRo
           </tr>
         </thead>
         <tbody>
-          {actionsData.attacks.map((attack) => (
+          {actionsData.attacks.map((attack) => {
+            const effectiveBonus = formatSignedNumber(parseSignedNumber(attack.bonus || '+0') - weakeningPenalty)
+
+            return (
             <tr key={attack.id}>
               <td>
                 <input
@@ -111,6 +117,11 @@ export default function Actions({ actionsData, onAddRow, onRemoveRow, onUpdateRo
                   onChange={(event) => onUpdateRow('attacks', attack.id, 'bonus', event.target.value)}
                   aria-label={`Bonus attacco ${attack.name || 'nuovo'}`}
                 />
+                {weakeningPenalty > 0 && (
+                  <div className="combat-impact-note combat-impact-note--inline">
+                    Effettivo: {effectiveBonus}
+                  </div>
+                )}
               </td>
               <td>
                 <input
@@ -136,7 +147,8 @@ export default function Actions({ actionsData, onAddRow, onRemoveRow, onUpdateRo
                 <button className="icon-btn icon-btn--remove" onClick={() => onRemoveRow('attacks', attack.id)}>-</button>
               </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
 

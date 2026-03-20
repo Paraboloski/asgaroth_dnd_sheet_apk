@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const dbUtils = require(path.join(__dirname, '..', 'db', 'schema.cjs'));
+const dbUtils = require(path.join(__dirname, '..', '..', 'db', 'schema.cjs'));
 const { SCHEMA_SQL, applyMigrations, seedFromState } = dbUtils;
 
 let mainWindow;
@@ -97,10 +97,10 @@ const readInitialStateFromDb = () => {
     FROM stats LIMIT 1
   `).get();
   const combatRow = database.prepare(`
-    SELECT ac, speed, max_hit_points, current_hit_points, temporary_hit_points,
+    SELECT ac, armor_bonus, speed, max_hit_points, current_hit_points, temporary_hit_points,
            death_save_successes, death_save_failures,
            honor_score, honor, sanity_score, sanity,
-           occult, occult_bonus, passive, prof_bonus, hero_points
+           occult, occult_bonus, passive, prof_bonus, hero_points, class_points, weakening_level
     FROM combat LIMIT 1
   `).get();
   const notesRow = database.prepare('SELECT content FROM notes LIMIT 1').get();
@@ -166,6 +166,7 @@ const readInitialStateFromDb = () => {
     },
     combat: {
       ac: combatRow.ac,
+      armorBonus: combatRow.armor_bonus,
       speed: combatRow.speed,
       maxHitPoints: combatRow.max_hit_points,
       currentHitPoints: combatRow.current_hit_points,
@@ -180,7 +181,9 @@ const readInitialStateFromDb = () => {
       occultBonus: combatRow.occult_bonus,
       passive: combatRow.passive,
       profBonus: combatRow.prof_bonus,
-      heroPoints: combatRow.hero_points
+      heroPoints: combatRow.hero_points,
+      classPoints: combatRow.class_points,
+      weakeningLevel: combatRow.weakening_level
     },
     skills,
     skillBonuses,
@@ -207,7 +210,8 @@ const writeCharacterStateToDb = (state) => {
   try {
     seedFromState(database, state);
     return true;
-  } catch {
+  } catch (error) {
+    console.error('save-character-state failed:', error);
     return false;
   }
 };
@@ -225,6 +229,18 @@ ipcMain.handle('get-character-state', () => {
 });
 
 ipcMain.handle('save-character-state', (_event, state) => writeCharacterStateToDb(state));
+
+ipcMain.handle('show-save-success-message', async () => {
+  const targetWindow = BrowserWindow.getFocusedWindow() || mainWindow;
+  await dialog.showMessageBox(targetWindow, {
+    type: 'info',
+    buttons: ['OK'],
+    defaultId: 0,
+    title: 'Salvataggio completato',
+    message: 'Scheda salvata con successo! Puoi chiudere l\'app.'
+  });
+  return true;
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
