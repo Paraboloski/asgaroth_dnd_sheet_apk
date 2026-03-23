@@ -14,6 +14,7 @@ import {
   addItem,
   createActionEntry,
   createInventoryItem,
+  normalizeHeaderLevels,
   removeItemById,
   updateItemById
 } from './utils'
@@ -129,10 +130,14 @@ export default function useCharacterSheet() {
         [section]: { ...prev[section], [key]: value }
       }
 
-      if (section === 'header' && key === 'level') {
+      if (section === 'header' && ['level', 'class1Level', 'class2Level'].includes(key)) {
+        nextState.header = {
+          ...nextState.header,
+          ...normalizeHeaderLevels(nextState.header, key === 'level' ? null : key)
+        }
         nextState.combat = {
           ...nextState.combat,
-          profBonus: formatProficiencyBonus(value)
+          profBonus: formatProficiencyBonus(nextState.header.level)
         }
       }
 
@@ -209,7 +214,8 @@ export default function useCharacterSheet() {
     (data.actions.statuses === undefined || Array.isArray(data.actions.statuses)) &&
     Array.isArray(data.actions.attacks) &&
     Array.isArray(data.actions.features) &&
-    Array.isArray(data.actions.traits)
+    Array.isArray(data.actions.traits) &&
+    (data.actions.factions === undefined || Array.isArray(data.actions.factions))
 
   const handleImportFile = (event) => {
     const file = event.target.files?.[0]

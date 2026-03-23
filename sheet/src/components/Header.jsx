@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import Editable from './Editable'
-import { sanitizeUnsignedNumber } from '../scripts/utils.js'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PROFILE_IMAGE_SIZE = 2 * 1024 * 1024
@@ -40,6 +39,16 @@ export default function Header({
   const [uploadError, setUploadError] = useState('')
   const profileImage = headerData.profileImage || ''
   const activeStatusNames = activeStatuses.map((status) => status.name).join(', ')
+  const class1Level = Number.parseInt(headerData.class1Level ?? '0', 10) || 0
+  const class2Level = Number.parseInt(headerData.class2Level ?? '0', 10) || 0
+  const totalLevel = Math.min(20, Math.max(1, class1Level + class2Level))
+  const resolvedClass1Name = headerData.class1?.trim() || 'Classe 1'
+  const resolvedClass2Name = headerData.class2?.trim() || 'Classe 2'
+  const class1Min = class2Level > 0 ? 0 : 1
+  const class2Min = class1Level > 0 ? 0 : 1
+  const class1Max = Math.max(0, 20 - class2Level)
+  const class2Max = Math.max(0, 20 - class1Level)
+  const levelBreakdownLabel = `Livello totale ${totalLevel}. ${resolvedClass1Name}: ${class1Level}. ${resolvedClass2Name}: ${class2Level}.`
 
   const openFilePicker = () => {
     if (!allowProfileImageUpload) return
@@ -154,12 +163,46 @@ export default function Header({
               </span>
             )}
           </h1>
-          <div className="sheet-subtitle">
-            <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} /> |{' '}
-            <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} /> |{' '}
-            <Editable className="sheet-subtitle-input" value={headerData.race} defaultValue="Razza" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'race', val)} /> |{' '}
-            <Editable className="sheet-subtitle-input" value={headerData.background} defaultValue="Background" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'background', val)} /> |{' '}
-            <Editable className="sheet-subtitle-input" value={headerData.alignment} defaultValue="Allineamento" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'alignment', val)} />
+          <div className="sheet-subtitle sheet-subtitle--details">
+            <span className="sheet-subtitle-item sheet-class-item">
+              <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} />
+              <input
+                type="number"
+                className="sheet-class-level-input"
+                value={headerData.class1Level ?? '1'}
+                min={class1Min}
+                max={class1Max}
+                onChange={(event) => onFieldChange('header', 'class1Level', event.target.value)}
+                aria-label={`Livello di ${resolvedClass1Name}`}
+                title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
+              />
+            </span>
+            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+            <span className="sheet-subtitle-item sheet-class-item">
+              <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} />
+              <input
+                type="number"
+                className="sheet-class-level-input"
+                value={headerData.class2Level ?? '0'}
+                min={class2Min}
+                max={class2Max}
+                onChange={(event) => onFieldChange('header', 'class2Level', event.target.value)}
+                aria-label={`Livello di ${resolvedClass2Name}`}
+                title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
+              />
+            </span>
+            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+            <span className="sheet-subtitle-item">
+              <Editable className="sheet-subtitle-input" value={headerData.race} defaultValue="Razza" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'race', val)} />
+            </span>
+            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+            <span className="sheet-subtitle-item">
+              <Editable className="sheet-subtitle-input" value={headerData.background} defaultValue="Background" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'background', val)} />
+            </span>
+            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+            <span className="sheet-subtitle-item">
+              <Editable className="sheet-subtitle-input" value={headerData.alignment} defaultValue="Allineamento" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'alignment', val)} />
+            </span>
           </div>
           {uploadError && (
             <div className="profile-upload-error" role="alert">
@@ -169,16 +212,12 @@ export default function Header({
         </div>
       </div>
       <div className="sheet-meta">
-        <div className="sheet-level">
-          Livello{' '}
-          <Editable
-            value={headerData.level}
-            defaultValue="1"
-            sanitize={(value) => sanitizeUnsignedNumber(value, 20)}
-            inputMode="numeric"
-            updateOnInput={false}
-            onChange={(val) => onFieldChange('header', 'level', val)}
-          />
+        <div className="sheet-level" aria-label={levelBreakdownLabel} tabIndex={0}>
+          Livello <span className="sheet-level__value">{totalLevel}</span>
+          <span className="sheet-level__tooltip" role="tooltip">
+            <span>{resolvedClass1Name}: {class1Level}</span>
+            <span>{resolvedClass2Name}: {class2Level}</span>
+          </span>
         </div>
         <div className="sheet-subtitle">
           Giocatore: <Editable className="sheet-subtitle-input" value={headerData.player} defaultValue="Tuo Nome" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'player', val)} />

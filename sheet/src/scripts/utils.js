@@ -8,6 +8,7 @@ const DEFAULT_INVENTORY_ITEM_NAME = ''
 const DEFAULT_INVENTORY_ITEM_DESCRIPTION = ''
 const DEFAULT_INVENTORY_ITEM_QUANTITY = '1'
 const DEFAULT_EQUIPMENT_BONUS = '+0'
+const BROWSER_STATE_STORAGE_KEY = 'sheet-browser-state'
 
 const coerceString = (value, fallback = '') => (typeof value === 'string' ? value : fallback)
 
@@ -27,6 +28,57 @@ const sanitizeWeakeningLevel = (value) => {
   return sanitizeUnsignedNumber(normalizedValue, 6) || '0'
 }
 
+const parseHeaderLevelValue = (value) => {
+  const normalizedValue = typeof value === 'string' ? value : `${value ?? ''}`
+  const sanitizedValue = sanitizeUnsignedNumber(normalizedValue, 20)
+  if (!sanitizedValue) return null
+
+  const parsedValue = Number.parseInt(sanitizedValue, 10)
+  return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
+export const normalizeHeaderLevels = (header = {}, preferredField = null) => {
+  const fallbackTotalLevel = parseHeaderLevelValue(header.level) ?? 1
+  let class1Level = parseHeaderLevelValue(header.class1Level)
+  let class2Level = parseHeaderLevelValue(header.class2Level)
+
+  if (class1Level === null && class2Level === null) {
+    class1Level = fallbackTotalLevel
+    class2Level = 0
+  } else if (class1Level === null) {
+    class1Level = Math.max(0, fallbackTotalLevel - (class2Level ?? 0))
+  } else if (class2Level === null) {
+    class2Level = Math.max(0, fallbackTotalLevel - class1Level)
+  }
+
+  class1Level = Math.min(Math.max(class1Level ?? 0, 0), 20)
+  class2Level = Math.min(Math.max(class2Level ?? 0, 0), 20)
+
+  if (preferredField === 'class1Level') {
+    class1Level = Math.min(class1Level, 20 - class2Level)
+  } else if (preferredField === 'class2Level') {
+    class2Level = Math.min(class2Level, 20 - class1Level)
+  } else if (class1Level + class2Level > 20) {
+    class2Level = Math.max(0, 20 - class1Level)
+  }
+
+  if (class1Level + class2Level < 1) {
+    if (preferredField === 'class2Level') {
+      class1Level = 0
+      class2Level = 1
+    } else {
+      class1Level = 1
+      class2Level = 0
+    }
+  }
+
+  return {
+    class1Level: `${class1Level}`,
+    class2Level: `${class2Level}`,
+    level: `${class1Level + class2Level}`
+  }
+}
+
 const getIpcRenderer = () => {
   if (typeof window === 'undefined') return null
   try {
@@ -34,6 +86,41 @@ const getIpcRenderer = () => {
     return electron?.ipcRenderer ?? null
   } catch {
     return null
+  }
+}
+
+const getBrowserStorage = () => {
+  if (typeof window === 'undefined') return null
+
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
+const readBrowserCharacterState = () => {
+  const storage = getBrowserStorage()
+  if (!storage) return null
+
+  try {
+    const rawState = storage.getItem(BROWSER_STATE_STORAGE_KEY)
+    if (!rawState) return null
+    return JSON.parse(rawState)
+  } catch {
+    return null
+  }
+}
+
+const writeBrowserCharacterState = (state) => {
+  const storage = getBrowserStorage()
+  if (!storage) return false
+
+  try {
+    storage.setItem(BROWSER_STATE_STORAGE_KEY, JSON.stringify(normalizeCharacterState(state)))
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -125,6 +212,28 @@ const normalizeSkillBonuses = (bonuses) => {
   )
 }
 
+const normalizeFactions = (factions) => {
+  if (!Array.isArray(factions)) return []
+
+  return factions.flatMap((faction, index) => {
+    if (!faction || typeof faction !== 'object') return []
+
+    const fallbackId = Date.now() + index
+    const id = coerceNumericId(faction.id, fallbackId)
+    const fameValue = sanitizeUnsignedNumber(
+      typeof faction.fame === 'string' ? faction.fame : `${faction.fame ?? ''}`
+    ) || '0'
+
+    return [{
+      id,
+      name: coerceString(faction.name),
+      rank: coerceString(faction.rank),
+      fame: fameValue,
+      privileges: coerceString(faction.privileges)
+    }]
+  })
+}
+
 export const normalizeCharacterState = (state) => {
   const fallback = {
     ...clone(DEFAULT_STATE),
@@ -175,7 +284,8 @@ export const normalizeCharacterState = (state) => {
         : fallback.actions.features,
       traits: Array.isArray(state.actions?.traits)
         ? state.actions.traits
-        : fallback.actions.traits
+        : fallback.actions.traits,
+      factions: normalizeFactions(state.actions?.factions)
     }
   }
 
@@ -183,10 +293,10 @@ export const normalizeCharacterState = (state) => {
     normalized.header.profileImage = fallback.header.profileImage
   }
 
-  normalized.header.level = sanitizeUnsignedNumber(
-    typeof normalized.header.level === 'string' ? normalized.header.level : `${normalized.header.level ?? ''}`,
-    20
-  ) || fallback.header.level
+  const normalizedHeaderLevels = normalizeHeaderLevels(normalized.header)
+  normalized.header.class1Level = normalizedHeaderLevels.class1Level
+  normalized.header.class2Level = normalizedHeaderLevels.class2Level
+  normalized.header.level = normalizedHeaderLevels.level
 
   if (typeof normalized.notes.content !== 'string') {
     normalized.notes.content = fallback.notes.content
@@ -241,7 +351,9 @@ export const createNormalizedCharacterState = () => normalizeCharacterState(clon
 
 export const fetchCharacterState = async () => {
   const ipcRenderer = getIpcRenderer()
-  if (!ipcRenderer?.invoke) return createNormalizedCharacterState()
+  if (!ipcRenderer?.invoke) {
+    return normalizeCharacterState(readBrowserCharacterState() ?? createNormalizedCharacterState())
+  }
   try {
     const state = await ipcRenderer.invoke('get-character-state')
     return normalizeCharacterState(state)
@@ -252,7 +364,7 @@ export const fetchCharacterState = async () => {
 
 export const saveCharacterState = async (state) => {
   const ipcRenderer = getIpcRenderer()
-  if (!ipcRenderer?.invoke) return false
+  if (!ipcRenderer?.invoke) return writeBrowserCharacterState(state)
   try {
     return Boolean(await ipcRenderer.invoke('save-character-state', normalizeCharacterState(state)))
   } catch {
@@ -263,7 +375,7 @@ export const saveCharacterState = async (state) => {
 export const showSaveSuccessMessage = async () => {
   const ipcRenderer = getIpcRenderer()
   if (!ipcRenderer?.invoke) {
-    alert("Scheda salvata con successo! Puoi chiudere l'app.")
+    alert('Scheda salvata nel browser.')
     return
   }
 
@@ -428,6 +540,11 @@ export const createActionEntry = (listName) => {
     newRow.bonus = '+0'
     newRow.damage = '1d?'
     newRow.notes = '-'
+  } else if (listName === 'factions') {
+    newRow.name = ''
+    newRow.rank = ''
+    newRow.fame = '0'
+    newRow.privileges = ''
   } else {
     newRow.name = 'Nuovo Elemento'
     newRow.description = 'Descrizione.'

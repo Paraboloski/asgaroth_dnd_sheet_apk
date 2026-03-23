@@ -80,7 +80,9 @@ export const DEFAULT_STATE = {
     profileImage: '',
     name: 'Nome Personaggio',
     class1: 'Classe 1',
+    class1Level: '1',
     class2: 'Classe 2',
+    class2Level: '0',
     race: 'Razza',
     background: 'Background',
     alignment: 'Allineamento',
@@ -130,7 +132,8 @@ export const DEFAULT_STATE = {
     statuses: [],
     attacks: [],
     features: [],
-    traits: []
+    traits: [],
+    factions: []
   }
 }
 

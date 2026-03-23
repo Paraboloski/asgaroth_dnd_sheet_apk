@@ -10,6 +10,8 @@ import Notes from './Notes'
 export default function CharacterSheetView({
   appClassName = 'app',
   sheetState,
+  theme = 'dark',
+  onToggleTheme,
   renderToolbar,
   allowProfileImageUpload = true,
   showProfileImage = true
@@ -49,7 +51,7 @@ export default function CharacterSheetView({
   } = sheetState
 
   return (
-    <div className={appClassName}>
+    <div className={appClassName} data-theme={theme}>
       <input
         ref={importInputRef}
         type="file"
@@ -62,7 +64,9 @@ export default function CharacterSheetView({
         onExport: handleExport,
         onImport: handleImport,
         onOpenNotes: () => setIsNotesOpen(true),
-        onReportBug: () => setIsBugModalOpen(true)
+        onReportBug: () => setIsBugModalOpen(true),
+        theme,
+        onToggleTheme
       }) : (
         <Navbar
           onSave={handleSave}
@@ -70,6 +74,8 @@ export default function CharacterSheetView({
           onImport={handleImport}
           onOpenNotes={() => setIsNotesOpen(true)}
           onReportBug={() => setIsBugModalOpen(true)}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
         />
       )}
       {isBugModalOpen && (

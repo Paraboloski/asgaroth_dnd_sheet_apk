@@ -38,7 +38,7 @@ function MobileMenu({ isOpen, onClose, onSave, onExport, onImport, onOpenNotes, 
   )
 }
 
-export default function MobileApp() {
+export default function MobileApp({ theme, onToggleTheme }) {
   const sheetState = useCharacterSheet()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -66,6 +66,8 @@ export default function MobileApp() {
     <CharacterSheetView
       appClassName="app mobile-app"
       sheetState={sheetState}
+      theme={theme}
+      onToggleTheme={onToggleTheme}
       allowProfileImageUpload={false}
       showProfileImage={false}
       renderToolbar={({ onSave, onExport, onImport, onOpenNotes, onReportBug }) => (
@@ -82,6 +84,15 @@ export default function MobileApp() {
               <span className="mobile-menu-trigger__line" />
               <span className="mobile-menu-trigger__line" />
               <span className="mobile-menu-trigger__line" />
+            </button>
+            <button
+              type="button"
+              className="mobile-theme-toggle"
+              onClick={onToggleTheme}
+              aria-pressed={theme === 'dark'}
+              aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+            >
+              Tema: {theme === 'dark' ? 'Scuro' : 'Chiaro'}
             </button>
           </div>
 

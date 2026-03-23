@@ -9,7 +9,9 @@ const SCHEMA_SQL = `
     profile_image TEXT,
     name TEXT,
     class1 TEXT,
+    class1_level TEXT,
     class2 TEXT,
+    class2_level TEXT,
     race TEXT,
     background TEXT,
     alignment TEXT,
@@ -96,6 +98,13 @@ const SCHEMA_SQL = `
     name TEXT,
     description TEXT
   );
+  CREATE TABLE IF NOT EXISTS actions_factions (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    rank TEXT,
+    fame TEXT,
+    privileges TEXT
+  );
   CREATE TABLE IF NOT EXISTS actions_statuses (
     id TEXT PRIMARY KEY,
     name TEXT,
@@ -116,6 +125,8 @@ const ensureColumn = (database, tableName, columnName, definition) => {
 
 const applyMigrations = (database) => {
   ensureColumn(database, 'header', 'profile_image', 'TEXT');
+  ensureColumn(database, 'header', 'class1_level', 'TEXT');
+  ensureColumn(database, 'header', 'class2_level', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_successes', 'TEXT');
   ensureColumn(database, 'combat', 'death_save_failures', 'TEXT');
   ensureColumn(database, 'combat', 'armor_bonus', 'TEXT');
@@ -170,10 +181,22 @@ const applyMigrations = (database) => {
       sort_order INTEGER NOT NULL DEFAULT 0
     );
   `);
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS actions_factions (
+      id INTEGER PRIMARY KEY,
+      name TEXT,
+      rank TEXT,
+      fame TEXT,
+      privileges TEXT
+    );
+  `);
   ensureColumn(database, 'actions_statuses', 'description', 'TEXT');
   ensureColumn(database, 'actions_statuses', 'active', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn(database, 'actions_statuses', 'custom', 'INTEGER NOT NULL DEFAULT 0');
   ensureColumn(database, 'actions_statuses', 'sort_order', 'INTEGER NOT NULL DEFAULT 0');
+  ensureColumn(database, 'actions_factions', 'rank', 'TEXT');
+  ensureColumn(database, 'actions_factions', 'fame', 'TEXT');
+  ensureColumn(database, 'actions_factions', 'privileges', 'TEXT');
 };
 
 const seedFromState = (database, state) => {
@@ -190,17 +213,22 @@ const seedFromState = (database, state) => {
       DELETE FROM actions_attacks;
       DELETE FROM actions_features;
       DELETE FROM actions_traits;
+      DELETE FROM actions_factions;
       DELETE FROM actions_statuses;
     `);
 
     database.prepare(`
-      INSERT INTO header (id, profile_image, name, class1, class2, race, background, alignment, level, player)
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO header (
+        id, profile_image, name, class1, class1_level, class2, class2_level, race, background, alignment, level, player
+      )
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       state.header.profileImage ?? '',
       state.header.name,
       state.header.class1,
+      state.header.class1Level,
       state.header.class2,
+      state.header.class2Level,
       state.header.race,
       state.header.background,
       state.header.alignment,
@@ -307,6 +335,20 @@ const seedFromState = (database, state) => {
     );
     state.actions.traits.forEach((trait) => {
       insertTrait.run(trait.id, trait.name, trait.description);
+    });
+
+    const insertFaction = database.prepare(
+      'INSERT INTO actions_factions (id, name, rank, fame, privileges) VALUES (?, ?, ?, ?, ?)'
+    );
+    const factions = Array.isArray(state.actions?.factions) ? state.actions.factions : [];
+    factions.forEach((faction) => {
+      insertFaction.run(
+        faction.id,
+        faction.name ?? '',
+        faction.rank ?? '',
+        faction.fame ?? '0',
+        faction.privileges ?? ''
+      );
     });
 
     const insertStatus = database.prepare(

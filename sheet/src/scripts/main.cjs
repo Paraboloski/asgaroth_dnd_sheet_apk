@@ -89,7 +89,18 @@ const readInitialStateFromDb = () => {
   if (!database) return null;
 
   const headerRow = database.prepare(`
-    SELECT profile_image, name, class1, class2, race, background, alignment, level, player
+    SELECT
+      profile_image,
+      name,
+      class1,
+      class1_level,
+      class2,
+      class2_level,
+      race,
+      background,
+      alignment,
+      level,
+      player
     FROM header LIMIT 1
   `).get();
   const statsRow = database.prepare(`
@@ -143,13 +154,18 @@ const readInitialStateFromDb = () => {
   const traits = database.prepare(
     'SELECT id, name, description FROM actions_traits ORDER BY id'
   ).all();
+  const factions = database.prepare(
+    'SELECT id, name, rank, fame, privileges FROM actions_factions ORDER BY id'
+  ).all();
 
   return {
     header: {
       profileImage: headerRow.profile_image,
       name: headerRow.name,
       class1: headerRow.class1,
+      class1Level: headerRow.class1_level,
       class2: headerRow.class2,
+      class2Level: headerRow.class2_level,
       race: headerRow.race,
       background: headerRow.background,
       alignment: headerRow.alignment,
@@ -199,7 +215,8 @@ const readInitialStateFromDb = () => {
       statuses,
       attacks,
       features,
-      traits
+      traits,
+      factions
     }
   };
 };

@@ -73,7 +73,7 @@ export default function SavingThrows({
       <li className="skill-row" key={id}>
         <input
           type="checkbox"
-          className="prof-check"
+          className="table-checkbox skill-checkbox"
           checked={isProficient}
           onChange={() => onToggleSkill(id)}
         />

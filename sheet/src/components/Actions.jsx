@@ -6,6 +6,7 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
   const customStatuses = statuses.filter((status) => status.custom)
   const orderedStatuses = [...baseStatuses, ...customStatuses]
   const weakeningPenalty = calculateWeakeningPenalty(weakeningLevel)
+  const factions = Array.isArray(actionsData.factions) ? actionsData.factions : []
 
   return (
     <section className="actions-section">
@@ -79,7 +80,7 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
       </table>
 
       <div className="section-header">
-        <div className="section-title">ATTACCHI & INCANTESIMI</div>
+        <div className="section-title">ATTACCHI & AZIONI</div>
         <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('attacks')} title="Aggiungi Attacco">+</button>
       </div>
       <table className="action-table">
@@ -232,6 +233,76 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
               </td>
               <td className="action-cell no-print">
                 <button className="icon-btn icon-btn--remove" onClick={() => onRemoveRow('traits', trait.id)}>-</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="section-header">
+        <div className="section-title">FAZIONI</div>
+        <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('factions')} title="Aggiungi Fazione">+</button>
+      </div>
+      <table className="action-table action-table--wide">
+        <thead>
+          <tr>
+            <th className="action-table__col action-table__col--name">Nome Fazione</th>
+            <th className="action-table__col" style={{ width: '15%' }}>Rango</th>
+            <th className="action-table__col" style={{ width: '10%' }}>Fama</th>
+            <th className="action-table__col action-table__col--notes">Privilegi</th>
+            <th className="action-table__col action-table__col--tools no-print"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {factions.map((faction) => (
+            <tr key={faction.id}>
+              <td>
+                <input
+                  type="text"
+                  className="table-input table-input--name"
+                  value={faction.name || ''}
+                  placeholder="Nome fazione"
+                  onChange={(event) => onUpdateRow('factions', faction.id, 'name', event.target.value)}
+                  aria-label={`Nome fazione ${faction.name || 'nuova'}`}
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  className="table-input"
+                  value={faction.rank || ''}
+                  placeholder="Rango"
+                  onChange={(event) => onUpdateRow('factions', faction.id, 'rank', event.target.value)}
+                  aria-label={`Rango fazione ${faction.name || 'nuova'}`}
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  className="table-input"
+                  value={faction.fame ?? '0'}
+                  min="0"
+                  placeholder="0"
+                  onChange={(event) => onUpdateRow('factions', faction.id, 'fame', event.target.value)}
+                  aria-label={`Punti Fama ${faction.name || 'nuova'}`}
+                />
+              </td>
+              <td>
+
+                <details>
+                  <summary style={{ cursor: 'pointer', opacity: 0.8, fontSize: '0.9em' }}>Espandi Privilegi</summary>
+                  <textarea
+                    className="table-textarea"
+                    rows={3}
+                    style={{ marginTop: '0.5rem' }}
+                    value={faction.privileges || ''}
+                    placeholder="Elenco dei privilegi ottenuti..."
+                    onChange={(event) => onUpdateRow('factions', faction.id, 'privileges', event.target.value)}
+                    aria-label={`Privilegi fazione ${faction.name || 'nuova'}`}
+                  />
+                </details>
+              </td>
+              <td className="action-cell no-print">
+                <button className="icon-btn icon-btn--remove" onClick={() => onRemoveRow('factions', faction.id)}>-</button>
               </td>
             </tr>
           ))}
