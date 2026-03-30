@@ -214,12 +214,13 @@ export default function CharacterSheetView({
         />
         <ClassLevelInput
           className="sheet-class-level-input infographic-pill__level"
-          value={characterData.header.class1Level ?? '1'}
+          value={characterData.header.class1Level ?? '0'}
           min={class1Min}
           max={class1Max}
           onCommit={(nextValue) => updateSectionField('header', 'class1Level', nextValue)}
           ariaLabel={`Livello di ${resolvedClass1Name}`}
           title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
+          mode="mobile"
         />
       </div>
       <div className="infographic-pill infographic-pill--class">
@@ -239,6 +240,7 @@ export default function CharacterSheetView({
           onCommit={(nextValue) => updateSectionField('header', 'class2Level', nextValue)}
           ariaLabel={`Livello di ${resolvedClass2Name}`}
           title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
+          mode="mobile"
         />
       </div>
       <label className="infographic-card">

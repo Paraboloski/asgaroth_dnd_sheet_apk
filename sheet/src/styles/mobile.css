@@ -669,6 +669,9 @@
       text-align: center;
       font-variant-numeric: tabular-nums;
       caret-color: white;
+      cursor: text;
+      user-select: text;
+      -webkit-user-select: text;
       padding: 0;
       text-indent: 0;
     }
