@@ -7,6 +7,7 @@ import Inventory from './Inventory'
 import Actions from './Actions'
 import Notes from './Notes'
 import Editable from './Editable'
+import ClassLevelInput from './ClassLevelInput'
 
 import { useState } from 'react'
 
@@ -211,14 +212,13 @@ export default function CharacterSheetView({
           autoWidth
           onChange={(val) => updateSectionField('header', 'class1', val)}
         />
-        <input
-          type="number"
+        <ClassLevelInput
           className="sheet-class-level-input infographic-pill__level"
           value={characterData.header.class1Level ?? '1'}
           min={class1Min}
           max={class1Max}
-          onChange={(event) => updateSectionField('header', 'class1Level', event.target.value)}
-          aria-label={`Livello di ${resolvedClass1Name}`}
+          onCommit={(nextValue) => updateSectionField('header', 'class1Level', nextValue)}
+          ariaLabel={`Livello di ${resolvedClass1Name}`}
           title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
         />
       </div>
@@ -231,14 +231,13 @@ export default function CharacterSheetView({
           autoWidth
           onChange={(val) => updateSectionField('header', 'class2', val)}
         />
-        <input
-          type="number"
+        <ClassLevelInput
           className="sheet-class-level-input infographic-pill__level"
           value={characterData.header.class2Level ?? '0'}
           min={class2Min}
           max={class2Max}
-          onChange={(event) => updateSectionField('header', 'class2Level', event.target.value)}
-          aria-label={`Livello di ${resolvedClass2Name}`}
+          onCommit={(nextValue) => updateSectionField('header', 'class2Level', nextValue)}
+          ariaLabel={`Livello di ${resolvedClass2Name}`}
           title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
         />
       </div>

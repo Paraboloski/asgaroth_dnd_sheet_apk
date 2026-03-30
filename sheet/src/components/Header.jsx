@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import Editable from './Editable'
+import ClassLevelInput from './ClassLevelInput'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_PROFILE_IMAGE_SIZE = 2 * 1024 * 1024
@@ -171,28 +172,26 @@ export default function Header({
               <div className="sheet-subtitle sheet-subtitle--details">
                 <span className="sheet-subtitle-item sheet-class-item sheet-field--class1">
                   <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} />
-                  <input
-                    type="number"
+                  <ClassLevelInput
                     className="sheet-class-level-input"
                     value={headerData.class1Level ?? '1'}
                     min={class1Min}
                     max={class1Max}
-                    onChange={(event) => onFieldChange('header', 'class1Level', event.target.value)}
-                    aria-label={`Livello di ${resolvedClass1Name}`}
+                    onCommit={(nextValue) => onFieldChange('header', 'class1Level', nextValue)}
+                    ariaLabel={`Livello di ${resolvedClass1Name}`}
                     title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
                   />
                 </span>
                 <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
                 <span className="sheet-subtitle-item sheet-class-item sheet-field--class2">
                   <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} />
-                  <input
-                    type="number"
+                  <ClassLevelInput
                     className="sheet-class-level-input"
                     value={headerData.class2Level ?? '0'}
                     min={class2Min}
                     max={class2Max}
-                    onChange={(event) => onFieldChange('header', 'class2Level', event.target.value)}
-                    aria-label={`Livello di ${resolvedClass2Name}`}
+                    onCommit={(nextValue) => onFieldChange('header', 'class2Level', nextValue)}
+                    ariaLabel={`Livello di ${resolvedClass2Name}`}
                     title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
                   />
                 </span>

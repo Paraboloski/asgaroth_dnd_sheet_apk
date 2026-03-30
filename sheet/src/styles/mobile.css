@@ -651,6 +651,10 @@
   }
 
   .mobile-app .sheet-class-level-input {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+      box-sizing: border-box;
       width: 32px;
       height: 32px;
       min-height: 32px;
@@ -661,10 +665,12 @@
       color: white;
       font-size: 14px;
       font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      line-height: 32px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      caret-color: white;
       padding: 0;
+      text-indent: 0;
     }
 
   .mobile-app .sheet-class-level-input:focus,
