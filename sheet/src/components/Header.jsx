@@ -33,7 +33,8 @@ export default function Header({
   activeStatuses = [],
   activeStatusIndicator = null,
   allowProfileImageUpload = true,
-  showProfileImage = true
+  showProfileImage = true,
+  showHeaderFields = true
 }) {
   const fileInputRef = useRef(null)
   const [uploadError, setUploadError] = useState('')
@@ -95,115 +96,121 @@ export default function Header({
   return (
     <header className="sheet-header">
       <div className="sheet-header-main">
-        {showProfileImage && (allowProfileImageUpload ? (
-          <>
-            <button
-              type="button"
-              className="profile-upload-trigger"
-              onClick={openFilePicker}
-              aria-label={profileImage ? 'Cambia foto profilo' : 'Carica foto profilo'}
-            >
-              {profileImage ? (
-                <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
-              ) : (
-                <span className="profile-image profile-image--placeholder" aria-hidden="true">
-                  <UserIcon />
+        <div className="sheet-header-copy">
+          <div className="sheet-header-identity">
+            {showProfileImage && (allowProfileImageUpload ? (
+              <>
+                <button
+                  type="button"
+                  className="profile-upload-trigger"
+                  onClick={openFilePicker}
+                  aria-label={profileImage ? 'Cambia foto profilo' : 'Carica foto profilo'}
+                >
+                  {profileImage ? (
+                    <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
+                  ) : (
+                    <span className="profile-image profile-image--placeholder" aria-hidden="true">
+                      <UserIcon />
+                    </span>
+                  )}
+                  <span className="profile-upload-overlay" aria-hidden="true">
+                    <UploadIcon />
+                  </span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  className="profile-upload-input"
+                  onChange={handleProfileImageChange}
+                  tabIndex={-1}
+                />
+              </>
+            ) : (
+              <div className="profile-upload-trigger profile-upload-trigger--static" aria-label="Foto profilo">
+                {profileImage ? (
+                  <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
+                ) : (
+                  <span className="profile-image profile-image--placeholder" aria-hidden="true">
+                    <UserIcon />
+                  </span>
+                )}
+              </div>
+            ))}
+            <h1 className="sheet-title sheet-title--with-status">
+              <Editable
+                className="sheet-title-input"
+                value={headerData.name}
+                defaultValue="Nome Personaggio"
+                nativeInput
+                onChange={(val) => onFieldChange('header', 'name', val)}
+              />
+              {activeStatusIndicator && (
+                <span
+                  key={activeStatusIndicator.id}
+                  className="player-status-indicator"
+                  role="img"
+                  aria-label={
+                    activeStatuses.length > 1
+                      ? `Status visibile: ${activeStatusIndicator.name}. In totale ci sono ${activeStatuses.length} status attivi.`
+                      : `Status attivo: ${activeStatusIndicator.name}.`
+                  }
+                  title={
+                    activeStatuses.length > 1
+                      ? `Status attivi: ${activeStatusNames}`
+                      : `Status attivo: ${activeStatusIndicator.name}`
+                  }
+                >
+                  <span className="player-status-indicator__emoji" aria-hidden="true">{activeStatusIndicator.emoji}</span>
                 </span>
               )}
-              <span className="profile-upload-overlay" aria-hidden="true">
-                <UploadIcon />
-              </span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-              className="profile-upload-input"
-              onChange={handleProfileImageChange}
-              tabIndex={-1}
-            />
-          </>
-        ) : (
-          <div className="profile-upload-trigger profile-upload-trigger--static" aria-label="Foto profilo">
-            {profileImage ? (
-              <img className="profile-image" src={profileImage} alt="Foto profilo del personaggio" />
-            ) : (
-              <span className="profile-image profile-image--placeholder" aria-hidden="true">
-                <UserIcon />
-              </span>
-            )}
+            </h1>
           </div>
-        ))}
-        <div className="sheet-header-copy">
-          <h1 className="sheet-title sheet-title--with-status">
-            <Editable
-              className="sheet-title-input"
-              value={headerData.name}
-              defaultValue="Nome Personaggio"
-              nativeInput
-              onChange={(val) => onFieldChange('header', 'name', val)}
-            />
-            {activeStatusIndicator && (
-              <span
-                key={activeStatusIndicator.id}
-                className="player-status-indicator"
-                role="img"
-                aria-label={
-                  activeStatuses.length > 1
-                    ? `Status visibile: ${activeStatusIndicator.name}. In totale ci sono ${activeStatuses.length} status attivi.`
-                    : `Status attivo: ${activeStatusIndicator.name}.`
-                }
-                title={
-                  activeStatuses.length > 1
-                    ? `Status attivi: ${activeStatusNames}`
-                    : `Status attivo: ${activeStatusIndicator.name}`
-                }
-              >
-                <span className="player-status-indicator__emoji" aria-hidden="true">{activeStatusIndicator.emoji}</span>
-              </span>
-            )}
-          </h1>
-          <div className="sheet-subtitle sheet-subtitle--details">
-            <span className="sheet-subtitle-item sheet-class-item">
-              <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} />
-              <input
-                type="number"
-                className="sheet-class-level-input"
-                value={headerData.class1Level ?? '1'}
-                min={class1Min}
-                max={class1Max}
-                onChange={(event) => onFieldChange('header', 'class1Level', event.target.value)}
-                aria-label={`Livello di ${resolvedClass1Name}`}
-                title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
-              />
-            </span>
-            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
-            <span className="sheet-subtitle-item sheet-class-item">
-              <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} />
-              <input
-                type="number"
-                className="sheet-class-level-input"
-                value={headerData.class2Level ?? '0'}
-                min={class2Min}
-                max={class2Max}
-                onChange={(event) => onFieldChange('header', 'class2Level', event.target.value)}
-                aria-label={`Livello di ${resolvedClass2Name}`}
-                title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
-              />
-            </span>
-            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
-            <span className="sheet-subtitle-item">
-              <Editable className="sheet-subtitle-input" value={headerData.race} defaultValue="Razza" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'race', val)} />
-            </span>
-            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
-            <span className="sheet-subtitle-item">
-              <Editable className="sheet-subtitle-input" value={headerData.background} defaultValue="Background" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'background', val)} />
-            </span>
-            <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
-            <span className="sheet-subtitle-item">
-              <Editable className="sheet-subtitle-input" value={headerData.alignment} defaultValue="Allineamento" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'alignment', val)} />
-            </span>
-          </div>
+          {showHeaderFields && (
+            <div className="sheet-header-fields">
+              <div className="sheet-subtitle sheet-subtitle--details">
+                <span className="sheet-subtitle-item sheet-class-item sheet-field--class1">
+                  <Editable className="sheet-subtitle-input" value={headerData.class1} defaultValue="Classe 1" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class1', val)} />
+                  <input
+                    type="number"
+                    className="sheet-class-level-input"
+                    value={headerData.class1Level ?? '1'}
+                    min={class1Min}
+                    max={class1Max}
+                    onChange={(event) => onFieldChange('header', 'class1Level', event.target.value)}
+                    aria-label={`Livello di ${resolvedClass1Name}`}
+                    title={`Livelli assegnabili a ${resolvedClass1Name}: da ${class1Min} a ${class1Max}`}
+                  />
+                </span>
+                <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+                <span className="sheet-subtitle-item sheet-class-item sheet-field--class2">
+                  <Editable className="sheet-subtitle-input" value={headerData.class2} defaultValue="Classe 2" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'class2', val)} />
+                  <input
+                    type="number"
+                    className="sheet-class-level-input"
+                    value={headerData.class2Level ?? '0'}
+                    min={class2Min}
+                    max={class2Max}
+                    onChange={(event) => onFieldChange('header', 'class2Level', event.target.value)}
+                    aria-label={`Livello di ${resolvedClass2Name}`}
+                    title={`Livelli assegnabili a ${resolvedClass2Name}: da ${class2Min} a ${class2Max}`}
+                  />
+                </span>
+                <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+                <span className="sheet-subtitle-item sheet-field--race">
+                  <Editable className="sheet-subtitle-input" value={headerData.race} defaultValue="Razza" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'race', val)} />
+                </span>
+                <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+                <span className="sheet-subtitle-item sheet-field--background">
+                  <Editable className="sheet-subtitle-input" value={headerData.background} defaultValue="Background" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'background', val)} />
+                </span>
+                <span className="sheet-subtitle-separator" aria-hidden="true">|</span>
+                <span className="sheet-subtitle-item sheet-field--alignment">
+                  <Editable className="sheet-subtitle-input" value={headerData.alignment} defaultValue="Allineamento" nativeInput autoWidth onChange={(val) => onFieldChange('header', 'alignment', val)} />
+                </span>
+              </div>
+            </div>
+          )}
           {uploadError && (
             <div className="profile-upload-error" role="alert">
               {uploadError}

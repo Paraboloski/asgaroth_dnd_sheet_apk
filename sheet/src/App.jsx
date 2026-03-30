@@ -36,21 +36,25 @@ function AppFallback({ theme }) {
 export default function App() {
   const isMobile = useIsMobile()
   const [theme, setTheme] = useState(getInitialTheme)
+  const effectiveTheme = isMobile ? 'dark' : theme
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    document.documentElement.style.colorScheme = theme
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme)
-  }, [theme])
+    document.documentElement.dataset.theme = effectiveTheme
+    document.documentElement.style.colorScheme = effectiveTheme
+
+    if (!isMobile) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+    }
+  }, [effectiveTheme, isMobile, theme])
 
   const handleToggleTheme = () => {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))
   }
 
   return (
-    <Suspense fallback={<AppFallback theme={theme} />}>
+    <Suspense fallback={<AppFallback theme={effectiveTheme} />}>
       {isMobile ? (
-        <MobileApp theme={theme} onToggleTheme={handleToggleTheme} />
+        <MobileApp theme={effectiveTheme} />
       ) : (
         <DesktopLegacyApp theme={theme} onToggleTheme={handleToggleTheme} />
       )}

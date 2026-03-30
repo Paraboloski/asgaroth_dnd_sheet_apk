@@ -1,6 +1,17 @@
 import { calculateWeakeningPenalty, formatSignedNumber, parseSignedNumber } from '../scripts/utils.js'
 
-export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onRemoveRow, onUpdateRow }) {
+export default function Actions({
+  actionsData,
+  weakeningLevel = 0,
+  onAddRow,
+  onRemoveRow,
+  onUpdateRow,
+  showStatuses = true,
+  showAttacks = true,
+  showFeatures = true,
+  showTraits = true,
+  showFactions = true
+}) {
   const statuses = Array.isArray(actionsData.statuses) ? actionsData.statuses : []
   const baseStatuses = statuses.filter((status) => !status.custom)
   const customStatuses = statuses.filter((status) => status.custom)
@@ -10,75 +21,81 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
 
   return (
     <section className="actions-section">
-      <div className="section-header">
-        <div className="section-title">STATUS & CONDIZIONI</div>
-        <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('statuses')} title="Aggiungi Status">+</button>
-      </div>
-      <table className="action-table action-table--statuses">
-        <thead>
-          <tr>
-            <th className="action-table__col action-table__col--name">Nome</th>
-            <th className="action-table__col action-table__col--notes">Descrizione</th>
-            <th className="action-table__col action-table__col--status-toggle">Attivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orderedStatuses.map((status) => (
-            <tr key={status.id}>
-              <td>
-                {status.custom ? (
-                  <input
-                    type="text"
-                    className="table-input table-input--name"
-                    value={status.name}
-                    placeholder="Nome status"
-                    onChange={(event) => onUpdateRow('statuses', status.id, 'name', event.target.value)}
-                    aria-label={`Nome status ${status.name || 'custom'}`}
-                  />
-                ) : (
-                  <strong className="status-name">{status.name}</strong>
-                )}
-              </td>
-              <td>
-                {status.custom ? (
-                  <textarea
-                    className="table-textarea"
-                    rows={2}
-                    value={status.description}
-                    placeholder="Descrizione dello status"
-                    onChange={(event) => onUpdateRow('statuses', status.id, 'description', event.target.value)}
-                    aria-label={`Descrizione status ${status.name || 'custom'}`}
-                  />
-                ) : (
-                  <span className="status-description">{status.description}</span>
-                )}
-              </td>
-              <td className="action-cell action-cell--status">
-                <div className="table-row-controls">
-                  <input
-                    type="checkbox"
-                    className="table-checkbox"
-                    checked={Boolean(status.active)}
-                    onChange={(event) => onUpdateRow('statuses', status.id, 'active', event.target.checked)}
-                    aria-label={`Segna ${status.name} come attivo`}
-                  />
-                  {status.custom && (
-                    <button
-                      className="icon-btn icon-btn--remove no-print"
-                      onClick={() => onRemoveRow('statuses', status.id)}
-                      title="Elimina Status"
-                      aria-label={`Elimina ${status.name || 'status custom'}`}
-                    >
-                      -
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {showStatuses && (
+        <>
+          <div className="section-header">
+            <div className="section-title">STATUS & CONDIZIONI</div>
+            <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('statuses')} title="Aggiungi Status">+</button>
+          </div>
+          <table className="action-table action-table--statuses">
+            <thead>
+              <tr>
+                <th className="action-table__col action-table__col--name">Nome</th>
+                <th className="action-table__col action-table__col--notes">Descrizione</th>
+                <th className="action-table__col action-table__col--status-toggle">Attivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orderedStatuses.map((status) => (
+                <tr key={status.id}>
+                  <td>
+                    {status.custom ? (
+                      <input
+                        type="text"
+                        className="table-input table-input--name"
+                        value={status.name}
+                        placeholder="Nome status"
+                        onChange={(event) => onUpdateRow('statuses', status.id, 'name', event.target.value)}
+                        aria-label={`Nome status ${status.name || 'custom'}`}
+                      />
+                    ) : (
+                      <strong className="status-name">{status.name}</strong>
+                    )}
+                  </td>
+                  <td>
+                    {status.custom ? (
+                      <textarea
+                        className="table-textarea"
+                        rows={2}
+                        value={status.description}
+                        placeholder="Descrizione dello status"
+                        onChange={(event) => onUpdateRow('statuses', status.id, 'description', event.target.value)}
+                        aria-label={`Descrizione status ${status.name || 'custom'}`}
+                      />
+                    ) : (
+                      <span className="status-description">{status.description}</span>
+                    )}
+                  </td>
+                  <td className="action-cell action-cell--status">
+                    <div className="table-row-controls">
+                      <input
+                        type="checkbox"
+                        className="table-checkbox"
+                        checked={Boolean(status.active)}
+                        onChange={(event) => onUpdateRow('statuses', status.id, 'active', event.target.checked)}
+                        aria-label={`Segna ${status.name} come attivo`}
+                      />
+                      {status.custom && (
+                        <button
+                          className="icon-btn icon-btn--remove no-print"
+                          onClick={() => onRemoveRow('statuses', status.id)}
+                          title="Elimina Status"
+                          aria-label={`Elimina ${status.name || 'status custom'}`}
+                        >
+                          -
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
+      {showAttacks && (
+        <>
       <div className="section-header">
         <div className="section-title">ATTACCHI & AZIONI</div>
         <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('attacks')} title="Aggiungi Attacco">+</button>
@@ -152,7 +169,11 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
           })}
         </tbody>
       </table>
+        </>
+      )}
 
+      {showFeatures && (
+        <>
       <div className="section-header">
         <div className="section-title">PRIVILEGI & TRATTI</div>
         <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('features')} title="Aggiungi Tratto">+</button>
@@ -195,7 +216,11 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
           ))}
         </tbody>
       </table>
+        </>
+      )}
 
+      {showTraits && (
+        <>
       <div className="section-header">
         <div className="section-title">PROFILO PSICOLOGICO</div>
         <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('traits')} title="Aggiungi Elemento">+</button>
@@ -238,6 +263,10 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
           ))}
         </tbody>
       </table>
+        </>
+      )}
+      {showFactions && (
+        <>
       <div className="section-header">
         <div className="section-title">FAZIONI</div>
         <button className="icon-btn icon-btn--add no-print" onClick={() => onAddRow('factions')} title="Aggiungi Fazione">+</button>
@@ -308,6 +337,8 @@ export default function Actions({ actionsData, weakeningLevel = 0, onAddRow, onR
           ))}
         </tbody>
       </table>
+        </>
+      )}
     </section>
   )
 }

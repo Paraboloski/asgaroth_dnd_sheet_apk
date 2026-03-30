@@ -39,6 +39,7 @@ export default function SavingThrows({
   deathSaveSuccesses = '0',
   deathSaveFailures = '0',
   onDeathSaveChange,
+  hideSectionHeader = false,
 }) {
   const deathAudioRef = useRef(null)
   const wasDeadRef = useRef(false)
@@ -181,9 +182,11 @@ export default function SavingThrows({
 
   return (
     <section className="saving-throws">
-      <div className="section-header">
-        <div className="section-title">Tiri salvezza</div>
-      </div>
+      {!hideSectionHeader && (
+        <div className="section-header">
+          <div className="section-title">Tiri salvezza</div>
+        </div>
+      )}
       <ul className="skill-list">
         {SAVE_DEFINITIONS.map((definition) => renderRow(definition))}
         <hr className="skill-divider" />
