@@ -549,6 +549,12 @@ body {
     text-transform: uppercase;
 }
 
+.combat-step-controls {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
 .section-header {
     display: flex;
     justify-content: space-between;

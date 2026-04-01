@@ -22,7 +22,7 @@ export default function Combat({
   const resolvedArmorBonus = Number.isFinite(armorBonus) ? armorBonus : parseSignedNumber(resolvedCombatData.armorBonus ?? '+0')
   const resolvedDexterityModifier = Number.isFinite(dexterityModifier) ? dexterityModifier : 0
   const armorClass = 10 + resolvedDexterityModifier + resolvedArmorBonus
-  const occultClickBonus = parseSignedNumber(resolvedCombatData.occultBonus ?? '+0')
+  const occultClickBonus = Math.max(0, parseSignedNumber(resolvedCombatData.occultBonus ?? '+0'))
   const weakeningLevel = Number.parseInt(resolvedCombatData.weakeningLevel ?? '0', 10) || 0
   const sanityModifier = calculateModifier(resolvedCombatData.sanityScore ?? '10')
   const occultTotal = calculateOccultPerception(
@@ -52,7 +52,7 @@ export default function Combat({
   )
 
   const stepOccultBonus = (delta) => {
-    const nextValue = Math.min(999, Math.max(-999, occultClickBonus + delta))
+    const nextValue = Math.min(999, Math.max(0, occultClickBonus + delta))
     onFieldChange('combat', 'occultBonus', formatSignedNumber(nextValue))
   }
 
@@ -189,6 +189,15 @@ export default function Combat({
         <div className="dnd-value">{formatSignedNumber(occultTotal)}</div>
         <div className="dnd-label">Percezione Occulta</div>
         <div className="combat-step-controls no-print" style={{ marginTop: '4px' }}>
+          <button
+            type="button"
+            className="table-step-btn"
+            onClick={() => stepOccultBonus(-1)}
+            title="Riduci bonus"
+            disabled={occultClickBonus <= 0}
+          >
+            -
+          </button>
           <button type="button" className="table-step-btn" onClick={() => stepOccultBonus(1)} title="Aumenta bonus">+</button>
         </div>
       </div>

@@ -1098,6 +1098,7 @@
     width: 100%;
     display: flex;
     justify-content: center;
+    gap: 6px;
     margin-top: 4px;
   }
 
